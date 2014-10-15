@@ -1,0 +1,4 @@
+Makefile
+raytracer
+*.o
+as1.vcxproj
