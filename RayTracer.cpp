@@ -22,15 +22,21 @@ Sample::Sample(int x_in, int y_in){
 };
 
 class Ray {
-	Vector2f pos;
-	Vector3f dir;
-	float t_min, t_max;
 	public:
-		Ray(Vector2f pos_input, Vector3f dir_input, float min_t, float max_t);
+		Vector3f pos;
+		Vector3f dir;
+		float t_min, t_max;
+		Ray(float min_t, float max_t);
+		Ray(Vector3f pos_input, Vector3f dir_input, float min_t, float max_t);
 	private:
 };
 
-Ray::Ray(Vector2f pos_input, Vector3f dir_input, float min_t, float max_t){
+Ray::Ray(float min_t, float max_t){
+	t_min = min_t;
+	t_max = max_t;
+};
+
+Ray::Ray(Vector3f pos_input, Vector3f dir_input, float min_t, float max_t){
 	pos = pos_input;
 	dir = dir_input;
 	t_min = min_t;
@@ -39,9 +45,10 @@ Ray::Ray(Vector2f pos_input, Vector3f dir_input, float min_t, float max_t){
 
 
 class Sampler {
-	int x_dim, y_dim, current_x, current_y;
-	bool done;
 	public:
+		int x_dim, y_dim, current_x, current_y;
+		bool done;
+
 		Sampler(int x, int y);
 		bool getSample(Sample* sample);
 	private:
@@ -75,11 +82,13 @@ bool Sampler::getSample(Sample* sample){
 };
 
 class Film {
-	int x, y;
-	MatrixXf output_image_r;
-	MatrixXf output_image_g;
-	MatrixXf output_image_b;
+
 	public:
+		int x, y;
+		MatrixXf output_image_r;
+		MatrixXf output_image_g;
+		MatrixXf output_image_b;
+
 		Film(int output_x, int output_y);
 		void commit(Sample& sample, Array3f color);
 		void writeImage();
@@ -105,38 +114,72 @@ void writeImage(){
 }
 
 class Camera {
-	Vector3f camera_coord;
 	public:
-		Camera(Vector3f coord);
+		Vector3f camera_coord;
+		Vector3f ll;
+		Vector3f lr;
+		Vector3f ul;
+		Vector3f ur;
+		int output_x;
+		int output_y;
+
+		Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft, Vector3f uright, int x, int y);
 		void generateRay(Sample& sample, Ray* ray);
 	private:
 };
 
-Camera::Camera(Vector3f coord){
+Camera::Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft, Vector3f uright, int x, int y){
 	camera_coord = coord;
+	ll = lleft;
+	lr = lright;
+	ul = ulleft;
+	ur = uright;
+	output_x = x;
+	output_y = y;
 };
 
+void Camera::generateRay(Sample& sample, Ray* ray){
+	float u = sample.x / ((float)output_x);
+	float v = sample.y / ((float)output_y);
+	//printf("u: %d %f\tv: %d %f\n", sample.x, u, sample.y, v);
+	Vector3f P = u*(v*ll + (1-v)* ul) + (1-u)*(v*lr + (1-v) * ur);
+	ray->pos = camera_coord;
+	ray->dir = P-camera_coord;
+};
+
+
+
 class Scene {
-	Sampler mySampler;
-	Film myFilm;
 	public:
-		Scene(int output_x, int output_y);
+		Sampler mySampler;
+		Film myFilm;
+		Camera myCamera;
+
+		Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y);
 		void render();
 	private:
 };
 
-Scene::Scene(int output_x, int output_y) : mySampler(output_x, output_y), myFilm(output_x, output_y){
+Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y) : mySampler(output_x, output_y), myFilm(output_x, output_y), myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y){
 };
 
 void Scene::render() {
 	Sample sample (0,0);
+	Ray ray(0, 1);
 	while (mySampler.getSample(&sample)) {
-		printf("X: %d Y: %d\n", sample.x, sample.y);
+		myCamera.generateRay(sample, &ray);
+		printf("Ray at X: %d Y: %d\n", sample.x, sample.y);
+		printf("Pos: (%f, %f, %f)\tDirection: (%f, %f, %f)\n\n\n", ray.pos[0], ray.pos[1], ray.pos[2], ray.dir[0], ray.dir[1], ray.dir[2]);
 	}
 };
 
 int main(int argc, char *argv[]) {
-	Scene myScene(100, 100);
+	Vector3f cam_coord(0, 0, 0);
+	Vector3f ll(50, 100, -50);
+	Vector3f lr(50, -100, -50);
+	Vector3f ul(50, 100, 50);
+	Vector3f ur(50, -100, 50);
+	Scene myScene(cam_coord, ll, lr, ul, ur, 200, 100);
 	myScene.render();
 	return 0;
 }
