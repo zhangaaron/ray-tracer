@@ -6,9 +6,11 @@
 #include <Eigen/Dense>
 #include <time.h>
 #include <math.h>
+#include "lodepng.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace lodepng;
 
 class Sample {
 	public:
@@ -67,10 +69,10 @@ bool Sampler::getSample(Sample* sample){
 		return false;
 	}
 	else if (current_x < x_dim){
-		current_x += 1;
+		current_x++;
 	}
 	else if (current_x == x_dim && current_y < y_dim){
-		current_y = current_y + 1;
+		current_y++;
 		current_x = 0;
 	}
 	else if (current_x == x_dim && current_y == y_dim){
@@ -81,36 +83,45 @@ bool Sampler::getSample(Sample* sample){
 	return true;
 };
 
+//Bit packed struct for color, RGB values 0-255
+struct Color {
+	unsigned char R:8;
+	unsigned char G:8;
+	unsigned char B:8;
+};
 class Film {
 
 	public:
-		int x, y;
-		MatrixXf output_image_r;
-		MatrixXf output_image_g;
-		MatrixXf output_image_b;
+		int width, height;
+		std::vector<unsigned char> RGBAOutputVector;
+		char * fileName;
 
-		Film(int output_x, int output_y);
-		void commit(Sample& sample, Array3f color);
+		Film(int output_x, int output_y, char *fileName);
+		void commit(Sample *sample, Color *color);
 		void writeImage();
 	private:
 };
 
-Film::Film(int output_x, int output_y){
-	x = output_x;
-	y = output_y;
-	MatrixXf output_image_r(output_x, output_y);
-	MatrixXf output_image_g(output_x, output_y);
-	MatrixXf output_image_b(output_x, output_y);
+Film::Film(int output_x, int output_y, char *fileName){
+
+	width = output_x;
+	height = output_y;
+	this->fileName = fileName;
+	RGBAOutputVector.resize(width * height * 4);
+	for (int i = 3; i < width * height * 4; i += 4) {
+		RGBAOutputVector[i] = 255; //Initialize opacity value of every pixel to 255. 
+	}
 }
 
-void Film::commit(Sample& sample, Array3f color){
-	output_image_r(sample.x, sample.y) = color[0];
-	output_image_g(sample.x, sample.y) = color[1];
-	output_image_b(sample.x, sample.y) = color[2];
+void Film::commit(Sample *sample, Color *color){
+	//Index into our output array and assign the correct color.
+	RGBAOutputVector[sample->x + sample->y * width * 4] = color->R;
+	RGBAOutputVector[sample->x + sample->y * width * 4 + 1] = color->G;
+	RGBAOutputVector[sample->x + sample->y * width * 4 + 2] = color->B;
 }
 
-void writeImage(){
-	//Figure out how to write to image
+void Film::writeImage(){
+	encode(fileName, RGBAOutputVector, width, height);
 }
 
 class Camera {
@@ -124,7 +135,7 @@ class Camera {
 		int output_y;
 
 		Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft, Vector3f uright, int x, int y);
-		void generateRay(Sample& sample, Ray* ray);
+		void generateRay(Sample *sample, Ray* ray);
 	private:
 };
 
@@ -138,9 +149,9 @@ Camera::Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft,
 	output_y = y;
 };
 
-void Camera::generateRay(Sample& sample, Ray* ray){
-	float u = sample.x / ((float)output_x);
-	float v = sample.y / ((float)output_y);
+void Camera::generateRay(Sample *sample, Ray* ray){
+	float u = sample->x / ((float)output_x);
+	float v = sample->y / ((float)output_y);
 	//printf("u: %d %f\tv: %d %f\n", sample.x, u, sample.y, v);
 	Vector3f P = u*(v*ll + (1-v)* ul) + (1-u)*(v*lr + (1-v) * ur);
 	ray->pos = camera_coord;
@@ -155,22 +166,28 @@ class Scene {
 		Film myFilm;
 		Camera myCamera;
 
-		Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y);
+		Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, char *fileName);
 		void render();
 	private:
 };
 
-Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y) : mySampler(output_x, output_y), myFilm(output_x, output_y), myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y){
+Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, char *fileName) : mySampler(output_x, output_y), myFilm(output_x, output_y, fileName), myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y){
 };
 
 void Scene::render() {
 	Sample sample (0,0);
 	Ray ray(0, 1);
 	while (mySampler.getSample(&sample)) {
-		myCamera.generateRay(sample, &ray);
-		printf("Ray at X: %d Y: %d\n", sample.x, sample.y);
-		printf("Pos: (%f, %f, %f)\tDirection: (%f, %f, %f)\n\n\n", ray.pos[0], ray.pos[1], ray.pos[2], ray.dir[0], ray.dir[1], ray.dir[2]);
+		myCamera.generateRay(&sample, &ray);
+		// printf("Ray at X: %d Y: %d\n", sample.x, sample.y);
+		// printf("Pos: (%f, %f, %f)\tDirection: (%f, %f, %f)\n\n\n", ray.pos[0], ray.pos[1], ray.pos[2], ray.dir[0], ray.dir[1], ray.dir[2]);
+		struct Color tempColor;
+		tempColor.R = sample.x + sample.y;
+		tempColor.G = sample.x + sample.y;
+		tempColor.B = sample.x + sample.y;
+		myFilm.commit(&sample, &tempColor);
 	}
+	myFilm.writeImage();
 };
 
 int main(int argc, char *argv[]) {
@@ -179,7 +196,10 @@ int main(int argc, char *argv[]) {
 	Vector3f lr(50, -100, -50);
 	Vector3f ul(50, 100, 50);
 	Vector3f ur(50, -100, 50);
-	Scene myScene(cam_coord, ll, lr, ul, ur, 200, 100);
+	char output[] = "Hello.png";
+	Scene myScene(cam_coord, ll, lr, ul, ur, 200, 100, output);
+
 	myScene.render();
+
 	return 0;
 }

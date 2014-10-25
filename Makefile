@@ -1,11 +1,11 @@
 CC = g++
-CFLAGS = -Wall -I ./eigen/
+CFLAGS = -g -Wall -ansi -I ./eigen/
 LDFLAGS = stuff
 
 RM = /bin/rm -f
 all: main
 main: RayTracer.cpp
-	$(CC) $(CFLAGS) RayTracer.cpp -o raytracer
+	$(CC) $(CFLAGS) lodepng.cpp RayTracer.cpp -o raytracer
 
 clean:
 	rm -rf raytracer
