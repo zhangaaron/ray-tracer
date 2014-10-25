@@ -43,6 +43,52 @@ Ray::Ray(Vector3f pos_input, Vector3f dir_input, float min_t, float max_t){
 	t_max = max_t;
 };
 
+class LocalGeo{
+	public:
+		Vector3f pos;
+		Vector3f normal;
+		LocalGeo(Vector3f position, Vector3f norm);
+};
+
+LocalGeo::LocalGeo(Vector3f position, Vector3f norm){
+	pos = position;
+	normal = norm;
+};
+
+class Shape{
+	public:
+		virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
+		virtual bool intersectP(Ray& ray) = 0;
+};
+
+class Sphere : public Shape{
+	public:
+		float radius;
+		Vector3f pos;
+		Sphere(Vector3f position, float r);
+		bool intersect(Ray& ray, float* thit, LocalGeo* local);
+		bool intersectP(Ray& ray);
+	private:
+};
+
+Sphere::Sphere(Vector3f position, float r){
+	radius = r;
+	pos = position;
+};
+
+bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
+	Vector3f e = ray.pos;
+	Vector3f d = ray.dir;
+
+	Vector3f c = pos;
+
+	float determinant = ((d.dot(e-c)) * (d.dot(e-c))) - (d.dot(d))*((e-c).dot(e-c) - radius*radius);
+	printf("%f", determinant);
+};
+
+bool Sphere::intersectP(Ray& ray){
+	return false;
+};
 
 class Sampler {
 	public:
@@ -141,11 +187,11 @@ Camera::Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft,
 void Camera::generateRay(Sample& sample, Ray* ray){
 	float u = sample.x / ((float)output_x);
 	float v = sample.y / ((float)output_y);
-	//printf("u: %d %f\tv: %d %f\n", sample.x, u, sample.y, v);
 	Vector3f P = u*(v*ll + (1-v)* ul) + (1-u)*(v*lr + (1-v) * ur);
 	ray->pos = camera_coord;
 	ray->dir = P-camera_coord;
 };
+
 
 
 
@@ -160,7 +206,11 @@ class Scene {
 	private:
 };
 
-Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y) : mySampler(output_x, output_y), myFilm(output_x, output_y), myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y){
+Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y) :
+	mySampler(output_x, output_y),
+	myFilm(output_x, output_y),
+	myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y)
+	{
 };
 
 void Scene::render() {
@@ -168,8 +218,7 @@ void Scene::render() {
 	Ray ray(0, 1);
 	while (mySampler.getSample(&sample)) {
 		myCamera.generateRay(sample, &ray);
-		printf("Ray at X: %d Y: %d\n", sample.x, sample.y);
-		printf("Pos: (%f, %f, %f)\tDirection: (%f, %f, %f)\n\n\n", ray.pos[0], ray.pos[1], ray.pos[2], ray.dir[0], ray.dir[1], ray.dir[2]);
+
 	}
 };
 
