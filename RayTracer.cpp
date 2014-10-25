@@ -85,12 +85,29 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 	Vector3f c = pos;
 
 	float determinant = ((d.dot(e-c)) * (d.dot(e-c))) - (d.dot(d))*((e-c).dot(e-c) - radius*radius);
-	printf("%f", determinant);
-	return false;
+	if (determinant < 0){
+		return false;
+	}
+	else{
+		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d));
+		local->pos = *thit * d + e;
+		local->normal = (local->pos - c)/radius;
+		return true;
+	}
 };
 
 bool Sphere::intersectP(Ray& ray){
-	return false;
+	Vector3f e = ray.pos;
+	Vector3f d = ray.dir;
+
+	Vector3f c = pos;
+
+	float determinant = ((d.dot(e-c)) * (d.dot(e-c))) - (d.dot(d))*((e-c).dot(e-c) - radius*radius);
+	if (determinant < 0){
+		return false;
+	}else{
+		return true;
+	}
 };
 
 class Sampler {
