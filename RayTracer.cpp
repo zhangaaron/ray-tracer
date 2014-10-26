@@ -306,7 +306,7 @@ void Film::commit(int *XYCoords, Color *color){
 		color->G = 255;
 		color->B = 255;
 	}
-	int arrayLoctoWrite = (XYCoords[0] + XYCoords[1]) * 3;
+	int arrayLoctoWrite = (XYCoords[0] + XYCoords[1] * width) * 3;
 	RGBOutputArr[arrayLoctoWrite] = color->R;
 	RGBOutputArr[arrayLoctoWrite + 1] = color->G;
 	RGBOutputArr[arrayLoctoWrite + 2] = color->B;
