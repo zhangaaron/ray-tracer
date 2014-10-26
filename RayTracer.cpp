@@ -23,6 +23,12 @@ Sample::Sample(int x_in, int y_in){
 	y = y_in;
 };
 
+struct Color {
+	unsigned char R:8;
+	unsigned char G:8;
+	unsigned char B:8;
+};
+
 class Ray {
 	public:
 		Vector3f pos;
@@ -63,7 +69,66 @@ class Shape{
 		virtual bool intersectP(Ray& ray) = 0;
 };
 
+class Light{
+	public:
+		virtual void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor) = 0;
+	private:
+};
 
+class PointLight : public Light{
+	public:
+		Vector3f pos;
+		Color* lightColor;
+		PointLight(Vector3f pos, Color* c);
+		void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor);
+};
+
+
+PointLight::PointLight(Vector3f position, Color* c){
+	pos = position;
+	lightColor = c;
+};
+
+void PointLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor){
+	return;
+};
+
+
+class DirectionalLight : public Light{
+	public:
+		Vector3f pos;
+		Color* lightColor;
+		DirectionalLight(Vector3f pos, Color* c);
+		void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor);
+};
+
+DirectionalLight::DirectionalLight(Vector3f position, Color* c){
+	pos = position;
+	lightColor = c;
+};
+
+void DirectionalLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor){
+	lcolor->R = lightColor->R;
+	lcolor->G = lightColor->G;
+	lcolor->B = lightColor->B;
+
+	
+};
+
+/*class AmbientLight : public Light{
+	public:
+		Color* lightColor;
+		AmbientLight(Color* c);
+		void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor);
+};
+
+AmbientLight::AmbientLight(Color* c){
+	lightColor = c;
+};*/
+
+void AmbientLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor){
+	return;
+};
 
 class Sphere : public Shape{
 	public:
@@ -188,11 +253,7 @@ void Sampler::next(int* XYCoords){
 
 
 //Bit packed struct for color, RGB values 0-255
-struct Color {
-	unsigned char R:8;
-	unsigned char G:8;
-	unsigned char B:8;
-};
+
 class Film {
 
 	public:
@@ -215,11 +276,20 @@ Film::Film(int output_x, int output_y, char *fileName){
 
 void Film::commit(int *XYCoords, Color *color){
 	//Index into our output array and assign the correct color.
+	if (XYCoords[0] < 50 && XYCoords[1] < 50){
+		color->R = 0;
+		color->G = 0;
+		color->B = 255;
+	}else{
+		color->R = 255;
+		color->G = 255;
+		color->B = 255;
+	}
 	int arrayLoctoWrite = (XYCoords[0] + XYCoords[1]) * 3;
 	RGBOutputArr[arrayLoctoWrite] = color->R;
 	RGBOutputArr[arrayLoctoWrite + 1] = color->G;
 	RGBOutputArr[arrayLoctoWrite + 2] = color->B;
-	//printf("%d, %d, %d, written at %d ", (int)color->R, (int)color->G, (int)color->B, arrayLoctoWrite);
+	printf("%d, %d, %d, written at %d\n", (int)color->R, (int)color->G, (int)color->B, arrayLoctoWrite);
 }
 
 void Film::writeImage(){
@@ -342,7 +412,7 @@ int main(int argc, char *argv[]) {
 	objects.push_back(&testSphere);
 	AggregatePrimitive primitives(objects);
 
-	char *output = "./helloworld1.png";
+	char *output = "./helloworld.png";
 	Scene myScene(cam_coord, ll, lr, ul, ur, 100, 100, &primitives, output);
 
 	myScene.render();

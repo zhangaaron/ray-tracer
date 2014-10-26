@@ -9,3 +9,4 @@ main: RayTracer.cpp
 
 clean:
 	rm -rf raytracer
+	rm -rf helloworld.png
