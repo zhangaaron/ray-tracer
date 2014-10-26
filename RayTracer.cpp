@@ -63,6 +63,8 @@ class Shape{
 		virtual bool intersectP(Ray& ray) = 0;
 };
 
+
+
 class Sphere : public Shape{
 	public:
 		float radius;
@@ -72,6 +74,7 @@ class Sphere : public Shape{
 		bool intersectP(Ray& ray);
 	private:
 };
+
 
 Sphere::Sphere(Vector3f position, float r){
 	radius = r;
@@ -110,6 +113,53 @@ bool Sphere::intersectP(Ray& ray){
 	}
 };
 
+class AggregatePrimitive{
+	public:
+		vector<Shape*> list;
+		AggregatePrimitive(vector<Shape*> l);
+		bool intersect(Ray& ray, float* thit, LocalGeo* local);
+		bool intersectP(Ray& ray);
+	private:
+};
+
+AggregatePrimitive::AggregatePrimitive(vector<Shape*> l){
+	list = l;
+};
+
+bool AggregatePrimitive::intersect(Ray& ray, float* thit, LocalGeo* local){
+	float min_t = std::numeric_limits<float>::max();
+	Vector3f holder1 (0,0,0);
+	Vector3f holder2 (0,0,0);
+	LocalGeo holder_local(holder1, holder2);
+	for(std::vector<Shape*>::iterator it = list.begin(); it != list.end(); ++it) {
+    	Shape* holder_shape = (*it);
+    	if (holder_shape->intersect(ray, thit, local)){
+    		if (min_t > *thit){
+    			min_t = *thit;
+    			holder_local = *local;
+    		}
+    	}
+	}
+	if (min_t != std::numeric_limits<float>::max()){
+		*thit = min_t;
+		*local = holder_local;
+		return true;
+	}else{
+		return false;
+	}
+};
+
+bool AggregatePrimitive::intersectP(Ray& ray){
+	for(std::vector<Shape*>::iterator it = list.begin(); it != list.end(); ++it) {
+    	Shape* holder_shape = *it;
+    	if (holder_shape->intersectP(ray)){
+    		return true;
+    	}
+	}
+	return false;
+} ;
+
+
 class Sampler {
 	public:
 		int x_max, y_max;
@@ -129,7 +179,7 @@ class Sampler {
 bool Sampler::hasNext(){
 	return (x < x_max && y < y_max);
 }
-void Sampler::next(int* XYCoords){	
+void Sampler::next(int* XYCoords){
 	XYCoords[0] = x;
 	XYCoords[1] = y;
 	x = (x + 1) % x_max;
@@ -173,8 +223,7 @@ void Film::commit(int *XYCoords, Color *color){
 }
 
 void Film::writeImage(){
-
-lodepng_encode24_file(fileName ,RGBOutputArr, width, height);
+	lodepng_encode24_file(fileName ,RGBOutputArr, width, height);
 }
 
 class Camera {
@@ -211,7 +260,38 @@ void Camera::generateRay(int *XYCoords, Ray* ray){
 	ray->dir = P-camera_coord;
 };
 
+class RayTracer{
+	public:
+		AggregatePrimitive* list;
+		RayTracer(AggregatePrimitive* l);
+		void trace(Ray& ray, int depth, Color* color);
+	private:
+};
+RayTracer::RayTracer(AggregatePrimitive* l){
+	list = l;
+}
 
+
+void RayTracer::trace(Ray& ray, int depth, Color* color){
+	if (depth > 6){
+		color->R = 0;
+		color->G = 0;
+		color->B = 0;
+		return ;
+	}
+	if(list->intersectP(ray)){
+		color->R = 0;
+		color->G = 255;
+		color->B = 0;
+		printf("Traced!");
+		return ;
+	}else{
+		color->R = 255;
+		color->G = 0;
+		color->B = 0;
+		return ;
+	}
+};
 
 
 class Scene {
@@ -219,17 +299,17 @@ class Scene {
 		Sampler mySampler;
 		Film myFilm;
 		Camera myCamera;
-
-		Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, char *fileName);
+		RayTracer myTracer;
+		Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, AggregatePrimitive* list, char *fileName);
 		void render();
 	private:
 };
 
-Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, 
-			int output_x, int output_y, char *fileName) 
- : mySampler(output_x, output_y), myFilm(output_x, output_y, fileName),
-  myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y){
-
+Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, AggregatePrimitive* list, char *fileName):
+	mySampler(output_x, output_y), myFilm(output_x, output_y, fileName),
+  	myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y),
+	myTracer(list)
+  	{
 };
 
 void Scene::render() {
@@ -240,28 +320,34 @@ void Scene::render() {
 		mySampler.next(XYCoords);
 		myCamera.generateRay(XYCoords, &ray);
 		// printf("Ray at X: %d Y: %d\n", sample.x, sample.y);
-		printf("Pos: (%f, %f, %f)\tDirection: (%f, %f, %f)\n\n\n", ray.pos[0], ray.pos[1], ray.pos[2], ray.dir[0], ray.dir[1], ray.dir[2]);
+		//printf("Pos: (%f, %f, %f)\tDirection: (%f, %f, %f)\n\n\n", ray.pos[0], ray.pos[1], ray.pos[2], ray.dir[0], ray.dir[1], ray.dir[2]);
 		struct Color tempColor;
-		tempColor.R = (char)(XYCoords[0] + XYCoords[1]);
-		tempColor.G = (char)(XYCoords[0] + XYCoords[1]);
-		tempColor.B = (char)(XYCoords[0] + XYCoords[1]);
+		myTracer.trace(ray, 0, &tempColor);
+		printf("X:%d\tY:%d\tR:%d\tG:%d\tB:%d \n", XYCoords[0], XYCoords[1],tempColor.R, tempColor.G, tempColor.B);
 		myFilm.commit(XYCoords, &tempColor);
-		}
+	}
 	myFilm.writeImage();
 };
 
 int main(int argc, char *argv[]) {
-	Vector3f cam_coord(0, 0, 0);
-	Vector3f ll(50, 100, -50);
-	Vector3f lr(50, -100, -50);
-	Vector3f ul(50, 100, 50);
-	Vector3f ur(50, -100, 50);
-	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 200, 100, output);
+	Vector3f cam_coord(0, 0, 100);
+	Vector3f ll(-50, -50, 0);
+	Vector3f lr(50, -50, 0);
+	Vector3f ul(-50, 50, 0);
+	Vector3f ur(50, 50, 0);
+	Vector3f pos(0, 0, -50);
+	Sphere testSphere(pos, 45);
 
-	 myScene.render();
- 	//unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
-	//lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
+	std::vector<Shape*> objects;
+	objects.push_back(&testSphere);
+	AggregatePrimitive primitives(objects);
+
+	char *output = "./helloworld1.png";
+	Scene myScene(cam_coord, ll, lr, ul, ur, 100, 100, &primitives, output);
+
+	myScene.render();
+ 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
+	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
 
 	return 0;
 }
