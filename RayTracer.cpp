@@ -90,6 +90,11 @@ PointLight::PointLight(Vector3f position, Color* c){
 };
 
 void PointLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor){
+	lray->pos = pos;
+	lray->dir = local.pos - lray->pos;
+	lcolor->R = lightColor->R;
+	lcolor->G = lightColor->G;
+	lcolor->B = lightColor->B;
 	return;
 };
 
@@ -108,14 +113,14 @@ DirectionalLight::DirectionalLight(Vector3f position, Color* c){
 };
 
 void DirectionalLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor){
+	lray->pos = local.pos;
+	lray->dir = pos;
 	lcolor->R = lightColor->R;
 	lcolor->G = lightColor->G;
 	lcolor->B = lightColor->B;
-
-	
 };
 
-/*class AmbientLight : public Light{
+class AmbientLight{
 	public:
 		Color* lightColor;
 		AmbientLight(Color* c);
@@ -124,10 +129,6 @@ void DirectionalLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolo
 
 AmbientLight::AmbientLight(Color* c){
 	lightColor = c;
-};*/
-
-void AmbientLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor){
-	return;
 };
 
 class Sphere : public Shape{
@@ -178,11 +179,25 @@ bool Sphere::intersectP(Ray& ray){
 	}
 };
 
+class Intersection{
+	public:
+		LocalGeo localGeo;
+		Shape* shape;
+		Intersection(LocalGeo l, Shape* s);
+	private:
+};
+
+Intersection::Intersection(LocalGeo l, Shape* s){
+	localGeo = l;
+	shape = s;
+};
+
+
 class AggregatePrimitive{
 	public:
 		vector<Shape*> list;
 		AggregatePrimitive(vector<Shape*> l);
-		bool intersect(Ray& ray, float* thit, LocalGeo* local);
+		bool intersect(Ray& ray, float* thit, Intersection* in);
 		bool intersectP(Ray& ray);
 	private:
 };
@@ -191,23 +206,30 @@ AggregatePrimitive::AggregatePrimitive(vector<Shape*> l){
 	list = l;
 };
 
-bool AggregatePrimitive::intersect(Ray& ray, float* thit, LocalGeo* local){
+
+
+bool AggregatePrimitive::intersect(Ray& ray, float* thit, Intersection* in){
 	float min_t = std::numeric_limits<float>::max();
 	Vector3f holder1 (0,0,0);
 	Vector3f holder2 (0,0,0);
-	LocalGeo holder_local(holder1, holder2);
+	Shape* shapeholder = NULL;
+	LocalGeo holder_local1(holder1, holder2);
+	LocalGeo holder_local2(holder1, holder2);
+
 	for(std::vector<Shape*>::iterator it = list.begin(); it != list.end(); ++it) {
     	Shape* holder_shape = (*it);
-    	if (holder_shape->intersect(ray, thit, local)){
+    	if (holder_shape->intersect(ray, thit, &holder_local2)){
     		if (min_t > *thit){
     			min_t = *thit;
-    			holder_local = *local;
+    			holder_local1 = holder_local2;
+    			shapeholder = holder_shape;
     		}
     	}
 	}
 	if (min_t != std::numeric_limits<float>::max()){
 		*thit = min_t;
-		*local = holder_local;
+		in->localGeo = holder_local1;
+		in->shape = shapeholder;
 		return true;
 	}else{
 		return false;
@@ -267,7 +289,6 @@ class Film {
 };
 
 Film::Film(int output_x, int output_y, char *fileName){
-
 	width = output_x;
 	height = output_y;
 	this->fileName = fileName;
@@ -289,7 +310,7 @@ void Film::commit(int *XYCoords, Color *color){
 	RGBOutputArr[arrayLoctoWrite] = color->R;
 	RGBOutputArr[arrayLoctoWrite + 1] = color->G;
 	RGBOutputArr[arrayLoctoWrite + 2] = color->B;
-	printf("%d, %d, %d, written at %d\n", (int)color->R, (int)color->G, (int)color->B, arrayLoctoWrite);
+	//printf("%d, %d, %d, written at %d\n", (int)color->R, (int)color->G, (int)color->B, arrayLoctoWrite);
 }
 
 void Film::writeImage(){
@@ -337,10 +358,10 @@ class RayTracer{
 		void trace(Ray& ray, int depth, Color* color);
 	private:
 };
+
 RayTracer::RayTracer(AggregatePrimitive* l){
 	list = l;
 }
-
 
 void RayTracer::trace(Ray& ray, int depth, Color* color){
 	if (depth > 6){
@@ -349,18 +370,17 @@ void RayTracer::trace(Ray& ray, int depth, Color* color){
 		color->B = 0;
 		return ;
 	}
-	if(list->intersectP(ray)){
+	if(!(list->intersectP(ray))){
 		color->R = 0;
-		color->G = 255;
-		color->B = 0;
-		printf("Traced!");
-		return ;
-	}else{
-		color->R = 255;
 		color->G = 0;
 		color->B = 0;
 		return ;
 	}
+	float holder = 0;
+	Intersection intersect();
+	intersect(Ray& ray, float* thit, Intersection* in)
+
+
 };
 
 
@@ -393,7 +413,7 @@ void Scene::render() {
 		//printf("Pos: (%f, %f, %f)\tDirection: (%f, %f, %f)\n\n\n", ray.pos[0], ray.pos[1], ray.pos[2], ray.dir[0], ray.dir[1], ray.dir[2]);
 		struct Color tempColor;
 		myTracer.trace(ray, 0, &tempColor);
-		printf("X:%d\tY:%d\tR:%d\tG:%d\tB:%d \n", XYCoords[0], XYCoords[1],tempColor.R, tempColor.G, tempColor.B);
+		//printf("X:%d\tY:%d\tR:%d\tG:%d\tB:%d \n", XYCoords[0], XYCoords[1],tempColor.R, tempColor.G, tempColor.B);
 		myFilm.commit(XYCoords, &tempColor);
 	}
 	myFilm.writeImage();
