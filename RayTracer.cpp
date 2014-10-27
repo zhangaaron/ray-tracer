@@ -374,9 +374,6 @@ void Camera::generateRay(int *XYCoords, Ray* ray){
 	Vector3f P = (1-u)*(v*ll + (1-v)* ul) + (u)*(v*lr + (1-v) * ur);
 	ray->pos = camera_coord;
 	ray->dir = P - camera_coord;
-	printf("XYCoord:%d\t%d\n", XYCoords[0], XYCoords[1]);
-	print_3f(ray->dir);
-	printf("\n");
 };
 
 class RayTracer{
@@ -428,7 +425,7 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 	objList->intersect(ray, &holder, &in, NULL);
 
 	//Glitches out if you don't put here
-	Vector3f surface_normal(in.localGeo->pos[0], in.localGeo->pos[1], in.localGeo->pos[2]);
+	Vector3f surface_normal(in.localGeo->normal[0], in.localGeo->normal[1], in.localGeo->normal[2]);
 
 	Shape* hitObject = in.shape;
 	Ray lightRay(0, 1);
@@ -460,6 +457,7 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 
 			Vector3f light_direction = lightRay.dir;
 			normalize(&light_direction);
+			
 			Vector3f product_term = (lightColor * std::max(surface_normal.dot(light_direction), 0.0f));
 			rgb[0] += product_term[0] * constants->k_d[0];
 			rgb[1] += product_term[1] * constants->k_d[1];
@@ -520,8 +518,10 @@ int main(int argc, char *argv[]) {
 	Vector3f lr(50, -50, 0);
 	Vector3f ul(-50, 50, 0);
 	Vector3f ur(50, 50, 0);
-	Vector3f pos(0, 0, -50);
+	Vector3f pos1(0, 0, -50);
 
+	Vector3f pos2(-30, 0, -50);
+	Vector3f pos3(30, 0, -50);
 	//Sample material
 	Vector3f k_a(0.1, 0.1, 0);
 	Vector3f k_d(1, 1, 0);
@@ -530,13 +530,14 @@ int main(int argc, char *argv[]) {
 	BRDF testSphereColor1(k_a, k_d, k_s, k_r, 16);
 
 	//Sampe sphere
-	Sphere testSphere1(pos, 45, &testSphereColor1);
-
+	Sphere testSphere1(pos2, 25, &testSphereColor1);
+	Sphere testSphere2(pos3, 25, &testSphereColor1);
 	//Add objects here
 	std::vector<Shape*> objects;
 	objects.push_back(&testSphere1);
+	objects.push_back(&testSphere2);
 
-	Vector3f lightPos1(200, 200, 100);
+	Vector3f lightPos1(200, 200, 200);
 	Vector3f lightColor1(0.6, 0.6, 0.6);
 
 	PointLight point1(lightPos1, lightColor1);
