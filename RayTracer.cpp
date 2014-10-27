@@ -24,9 +24,28 @@ Sample::Sample(int x_in, int y_in){
 };
 
 struct Color {
-	unsigned char R:8;
-	unsigned char G:8;
-	unsigned char B:8;
+	float R;
+	float G;
+	float B;
+};
+
+class BRDF{
+	public:
+		Color* k_s;
+		Color* k_a;
+		Color* k_r;
+		Color* k_d;
+		float k_sp;
+		BRDF(Color* a, Color* d, Color* s, Color* r, float sp);
+	private:
+};
+
+BRDF::BRDF(Color* a, Color* d, Color* s, Color* r, float sp){
+	k_s = s;
+	k_a = a;
+	k_r = r;
+	k_d = d;
+	k_sp = sp;
 };
 
 class Ray {
@@ -65,13 +84,14 @@ LocalGeo::LocalGeo(Vector3f position, Vector3f norm){
 
 class Shape{
 	public:
+		BRDF* material;
 		virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
 		virtual bool intersectP(Ray& ray) = 0;
 };
 
 class Light{
 	public:
-		virtual void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor) = 0;
+		virtual void generateLightRay(LocalGeo* local, Ray* lray, Color* lcolor) = 0;
 	private:
 };
 
@@ -80,7 +100,7 @@ class PointLight : public Light{
 		Vector3f pos;
 		Color* lightColor;
 		PointLight(Vector3f pos, Color* c);
-		void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor);
+		void generateLightRay(LocalGeo* local, Ray* lray, Color* lcolor);
 };
 
 
@@ -89,9 +109,9 @@ PointLight::PointLight(Vector3f position, Color* c){
 	lightColor = c;
 };
 
-void PointLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor){
+void PointLight::generateLightRay(LocalGeo* local, Ray* lray, Color* lcolor){
 	lray->pos = pos;
-	lray->dir = local.pos - lray->pos;
+	lray->dir = local->pos - lray->pos;
 	lcolor->R = lightColor->R;
 	lcolor->G = lightColor->G;
 	lcolor->B = lightColor->B;
@@ -104,7 +124,7 @@ class DirectionalLight : public Light{
 		Vector3f pos;
 		Color* lightColor;
 		DirectionalLight(Vector3f pos, Color* c);
-		void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor);
+		void generateLightRay(LocalGeo* local, Ray* lray, Color* lcolor);
 };
 
 DirectionalLight::DirectionalLight(Vector3f position, Color* c){
@@ -112,8 +132,8 @@ DirectionalLight::DirectionalLight(Vector3f position, Color* c){
 	lightColor = c;
 };
 
-void DirectionalLight::generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor){
-	lray->pos = local.pos;
+void DirectionalLight::generateLightRay(LocalGeo* local, Ray* lray, Color* lcolor){
+	lray->pos = local->pos;
 	lray->dir = pos;
 	lcolor->R = lightColor->R;
 	lcolor->G = lightColor->G;
@@ -124,7 +144,7 @@ class AmbientLight{
 	public:
 		Color* lightColor;
 		AmbientLight(Color* c);
-		void generateLightRay(LocalGeo& local, Ray* lray, Color* lcolor);
+		void generateLightRay(LocalGeo* local, Ray* lray, Color* lcolor);
 };
 
 AmbientLight::AmbientLight(Color* c){
@@ -135,16 +155,18 @@ class Sphere : public Shape{
 	public:
 		float radius;
 		Vector3f pos;
-		Sphere(Vector3f position, float r);
+		BRDF* material;
+		Sphere(Vector3f position, float r, BRDF* m);
 		bool intersect(Ray& ray, float* thit, LocalGeo* local);
 		bool intersectP(Ray& ray);
 	private:
 };
 
 
-Sphere::Sphere(Vector3f position, float r){
+Sphere::Sphere(Vector3f position, float r, BRDF* m){
 	radius = r;
 	pos = position;
+	material = m;
 };
 
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
@@ -181,13 +203,13 @@ bool Sphere::intersectP(Ray& ray){
 
 class Intersection{
 	public:
-		LocalGeo localGeo;
+		LocalGeo* localGeo;
 		Shape* shape;
-		Intersection(LocalGeo l, Shape* s);
+		Intersection(LocalGeo* l, Shape* s);
 	private:
 };
 
-Intersection::Intersection(LocalGeo l, Shape* s){
+Intersection::Intersection(LocalGeo* l, Shape* s){
 	localGeo = l;
 	shape = s;
 };
@@ -197,8 +219,8 @@ class AggregatePrimitive{
 	public:
 		vector<Shape*> list;
 		AggregatePrimitive(vector<Shape*> l);
-		bool intersect(Ray& ray, float* thit, Intersection* in);
-		bool intersectP(Ray& ray);
+		bool intersect(Ray& ray, float* thit, Intersection* in, Shape* current);
+		bool intersectP(Ray& ray, Shape* current);
 	private:
 };
 
@@ -208,7 +230,7 @@ AggregatePrimitive::AggregatePrimitive(vector<Shape*> l){
 
 
 
-bool AggregatePrimitive::intersect(Ray& ray, float* thit, Intersection* in){
+bool AggregatePrimitive::intersect(Ray& ray, float* thit, Intersection* in, Shape* current){
 	float min_t = std::numeric_limits<float>::max();
 	Vector3f holder1 (0,0,0);
 	Vector3f holder2 (0,0,0);
@@ -218,17 +240,19 @@ bool AggregatePrimitive::intersect(Ray& ray, float* thit, Intersection* in){
 
 	for(std::vector<Shape*>::iterator it = list.begin(); it != list.end(); ++it) {
     	Shape* holder_shape = (*it);
-    	if (holder_shape->intersect(ray, thit, &holder_local2)){
-    		if (min_t > *thit){
-    			min_t = *thit;
-    			holder_local1 = holder_local2;
-    			shapeholder = holder_shape;
+    	if (current != holder_shape){
+    		if (holder_shape->intersect(ray, thit, &holder_local2)){
+    			if (min_t > *thit){
+	    			min_t = *thit;
+	    			holder_local1 = holder_local2;
+	    			shapeholder = holder_shape;
+    			}
     		}
     	}
 	}
 	if (min_t != std::numeric_limits<float>::max()){
 		*thit = min_t;
-		in->localGeo = holder_local1;
+		in->localGeo = &holder_local1;
 		in->shape = shapeholder;
 		return true;
 	}else{
@@ -236,11 +260,13 @@ bool AggregatePrimitive::intersect(Ray& ray, float* thit, Intersection* in){
 	}
 };
 
-bool AggregatePrimitive::intersectP(Ray& ray){
+bool AggregatePrimitive::intersectP(Ray& ray, Shape* current){
 	for(std::vector<Shape*>::iterator it = list.begin(); it != list.end(); ++it) {
     	Shape* holder_shape = *it;
-    	if (holder_shape->intersectP(ray)){
-    		return true;
+    	if (holder_shape != current){
+    		if (holder_shape->intersectP(ray)){
+    			return true;
+    		}
     	}
 	}
 	return false;
@@ -297,19 +323,10 @@ Film::Film(int output_x, int output_y, char *fileName){
 
 void Film::commit(int *XYCoords, Color *color){
 	//Index into our output array and assign the correct color.
-	if (XYCoords[0] < 50 && XYCoords[1] < 50){
-		color->R = 0;
-		color->G = 0;
-		color->B = 255;
-	}else{
-		color->R = 255;
-		color->G = 255;
-		color->B = 255;
-	}
 	int arrayLoctoWrite = (XYCoords[0] + XYCoords[1] * width) * 3;
-	RGBOutputArr[arrayLoctoWrite] = color->R;
-	RGBOutputArr[arrayLoctoWrite + 1] = color->G;
-	RGBOutputArr[arrayLoctoWrite + 2] = color->B;
+	RGBOutputArr[arrayLoctoWrite] = (int)((color->R)*255);
+	RGBOutputArr[arrayLoctoWrite + 1] = (int)((color->G)*255);
+	RGBOutputArr[arrayLoctoWrite + 2] = (int)((color->B)*255);
 	//printf("%d, %d, %d, written at %d\n", (int)color->R, (int)color->G, (int)color->B, arrayLoctoWrite);
 }
 
@@ -353,14 +370,16 @@ void Camera::generateRay(int *XYCoords, Ray* ray){
 
 class RayTracer{
 	public:
-		AggregatePrimitive* list;
-		RayTracer(AggregatePrimitive* l);
+		AggregatePrimitive* objList;
+		std::vector<Light*>* lightList;
+		RayTracer(AggregatePrimitive* o, std::vector<Light*>* l);
 		void trace(Ray& ray, int depth, Color* color);
 	private:
 };
 
-RayTracer::RayTracer(AggregatePrimitive* l){
-	list = l;
+RayTracer::RayTracer(AggregatePrimitive* o, std::vector<Light*>* l){
+	objList = o;
+	lightList = l;
 }
 
 void RayTracer::trace(Ray& ray, int depth, Color* color){
@@ -370,15 +389,34 @@ void RayTracer::trace(Ray& ray, int depth, Color* color){
 		color->B = 0;
 		return ;
 	}
-	if(!(list->intersectP(ray))){
+	if(!(objList->intersectP(ray, NULL))){
 		color->R = 0;
 		color->G = 0;
 		color->B = 0;
 		return ;
 	}
+
 	float holder = 0;
-	Intersection intersect();
-	intersect(Ray& ray, float* thit, Intersection* in)
+	Vector3f dummy(0,0,0);
+	LocalGeo holderGeo(dummy, dummy);
+	Shape* shapeHolder = NULL;
+	Intersection in(&holderGeo, shapeHolder);
+	objList->intersect(ray, &holder, &in, NULL);
+	Shape* hitObject = in.shape;
+	Ray lightRay(0, 1);
+	struct Color lightColor;
+	printf("we got here");
+	for(std::vector<Light*>::iterator it = lightList->begin(); it != lightList->end(); ++it) {
+		Light* currentLight = (*it);
+		currentLight->generateLightRay(in.localGeo, &lightRay, &lightColor);
+		if (!(objList->intersectP(lightRay, hitObject))){
+			hitObject->material;
+			Vector3f rgb(0,0,0);
+
+
+		}
+
+	}
 
 
 };
@@ -390,15 +428,15 @@ class Scene {
 		Film myFilm;
 		Camera myCamera;
 		RayTracer myTracer;
-		Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, AggregatePrimitive* list, char *fileName);
+		Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, AggregatePrimitive* objlist, std::vector<Light*>* lightList,char *fileName);
 		void render();
 	private:
 };
 
-Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, AggregatePrimitive* list, char *fileName):
+Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, AggregatePrimitive* objlist, std::vector<Light*>* lightList, char *fileName):
 	mySampler(output_x, output_y), myFilm(output_x, output_y, fileName),
   	myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y),
-	myTracer(list)
+	myTracer(objlist, lightList)
   	{
 };
 
@@ -412,8 +450,12 @@ void Scene::render() {
 		// printf("Ray at X: %d Y: %d\n", sample.x, sample.y);
 		//printf("Pos: (%f, %f, %f)\tDirection: (%f, %f, %f)\n\n\n", ray.pos[0], ray.pos[1], ray.pos[2], ray.dir[0], ray.dir[1], ray.dir[2]);
 		struct Color tempColor;
+		tempColor.R = 0;
+		tempColor.G = 0;
+		tempColor.B = 0;
 		myTracer.trace(ray, 0, &tempColor);
-		//printf("X:%d\tY:%d\tR:%d\tG:%d\tB:%d \n", XYCoords[0], XYCoords[1],tempColor.R, tempColor.G, tempColor.B);
+
+		printf("X:%d\tY:%d\tR:%f\tG:%f\tB:%f \n", XYCoords[0], XYCoords[1],tempColor.R, tempColor.G, tempColor.B);
 		myFilm.commit(XYCoords, &tempColor);
 	}
 	myFilm.writeImage();
@@ -426,14 +468,33 @@ int main(int argc, char *argv[]) {
 	Vector3f ul(-50, 50, 0);
 	Vector3f ur(50, 50, 0);
 	Vector3f pos(0, 0, -50);
-	Sphere testSphere(pos, 45);
+
+	struct Color k_a;
+	k_a.R = 0.1;
+	k_a.G = 0.1;
+	k_a.B = 0;
+	struct Color k_d;
+	k_a.R = 1;
+	k_a.G = 1;
+	k_a.B = 0;
+	struct Color k_s;
+	k_a.R = 0;
+	k_a.G = 0.8;
+	k_a.B = 0.8;
+	struct Color k_r;
+	k_a.R = 0;
+	k_a.G = 0;
+	k_a.B = 0;
+	BRDF testSphereColor(&k_a, &k_d, &k_s, &k_r, 16);
+	Sphere testSphere(pos, 45, &testSphereColor);
 
 	std::vector<Shape*> objects;
 	objects.push_back(&testSphere);
 	AggregatePrimitive primitives(objects);
+	std::vector<Light*> lightList;
 
 	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 100, 100, &primitives, output);
+	Scene myScene(cam_coord, ll, lr, ul, ur, 100, 100, &primitives, &lightList, output);
 
 	myScene.render();
  	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
