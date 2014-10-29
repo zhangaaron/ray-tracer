@@ -156,6 +156,42 @@ AmbientLight::AmbientLight(Vector3f c){
 	lightColor = c;
 };*/
 
+class Triangle : public Shape{
+	public:
+		Vector3f vertex1;
+		Vector3f vertex2;
+		Vector3f vertex3;
+		BRDF* material;
+		Triangle(Vector3f v1, Vector3f v2, Vector3f v3, BRDF* m);
+		bool intersect(Ray& ray, float* thit, LocalGeo* local);
+		bool intersectP(Ray& ray);
+		BRDF* get_material();
+	private:
+};
+
+Triangle::Triangle(Vector3f v1, Vector3f v2, Vector3f v3, BRDF* m){
+	vertex1 = v1;
+	vertex2 = v2;
+	vertex3 = v3;
+	material = m;
+};
+
+bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
+	return false;
+};
+
+
+bool Triangle::intersectP(Ray& ray){
+	return false;
+};
+
+BRDF* Triangle::get_material(){
+	return material;
+};
+
+
+
+
 class Sphere : public Shape{
 	public:
 		float radius;
@@ -333,9 +369,9 @@ Film::Film(int output_x, int output_y, char *fileName){
 
 void Film::commit(int *XYCoords, Vector3f color){
 	int arrayLoctoWrite = (XYCoords[0] + XYCoords[1] * width) * 3;
-	RGBOutputArr[arrayLoctoWrite] = (int)((color[0])*255);
-	RGBOutputArr[arrayLoctoWrite + 1] = (int)((color[1])*255);
-	RGBOutputArr[arrayLoctoWrite + 2] = (int)((color[2])*255);
+	RGBOutputArr[arrayLoctoWrite] = (int)round((color[0])*255);
+	RGBOutputArr[arrayLoctoWrite + 1] = (int)round((color[1])*255);
+	RGBOutputArr[arrayLoctoWrite + 2] = (int)round((color[2])*255);
 }
 
 void Film::writeImage(){
@@ -393,9 +429,10 @@ RayTracer::RayTracer(AggregatePrimitive* o, std::vector<Light*>* l, Vector3f a){
 }
 
 void setColor(Vector3f* color, float r, float g, float b){
-	(*color)[0] = r;
-	(*color)[1] = g;
-	(*color)[2] = b;
+
+	(*color)[0] = std::min(r, 1.0f);
+	(*color)[1] = std::min(g, 1.0f);
+	(*color)[2] = std::min(b, 1.0f);
 }
 
 void normalize(Vector3f* v){
@@ -426,53 +463,75 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 
 	//Glitches out if you don't put here
 	Vector3f surface_normal(in.localGeo->normal[0], in.localGeo->normal[1], in.localGeo->normal[2]);
-
+	Vector3f surface_normal2(in.localGeo->normal[0], in.localGeo->normal[1], in.localGeo->normal[2]);
 	Shape* hitObject = in.shape;
 	Ray lightRay(0, 1);
-
+	Vector3f local_pos(in.localGeo->pos[0], in.localGeo->pos[1], in.localGeo->pos[2]);
+	BRDF* constants = (hitObject)->get_material();
+	Vector3f rgb(0,0,0);
+	//rgb[0] += ambient[0] * constants->k_a[0];
+	//rgb[1] += ambient[1] * constants->k_a[1];
+	//rgb[2] += ambient[2] * constants->k_a[2];
 	for(std::vector<Light*>::iterator it = lightList->begin(); it != lightList->end(); ++it) {
 
 		Light* currentLight = (*it);
-		Vector3f local_pos(in.localGeo->pos[0], in.localGeo->pos[1], in.localGeo->pos[2]);
+
 		LocalGeo geo_light_ray(local_pos, dummy);
 		currentLight->generateLightRay(&geo_light_ray, &lightRay);
 
-		//if (!(objList->intersectP(lightRay, hitObject))){
-		if (true){
+		if (!(objList->intersectP(lightRay, hitObject))){
 
 
-			BRDF* constants = (hitObject)->get_material();
-			Vector3f rgb(0,0,0);
-			rgb[0] += ambient[0] * constants->k_a[0];
-			rgb[1] += ambient[1] * constants->k_a[1];
-			rgb[2] += ambient[2] * constants->k_a[2];
-
-
-
-
-			//printf("Colored in things with %f, %f, %f\n", (*color)[0], (*color)[1], (*color)[2]);
-			//Diffuse term calculation
 			Vector3f lightColor = currentLight->getColor();
+			rgb[0] += lightColor[0] * constants->k_a[0];
+			rgb[1] += lightColor[1] * constants->k_a[1];
+			rgb[2] += lightColor[2] * constants->k_a[2];
+
+			//printf("Colored ambient in things with %f, %f, %f\n", rgb[0], rgb[1], rgb[2]);
+			//Diffuse term calculation
+
 			normalize(&surface_normal);
 
 			Vector3f light_direction = lightRay.dir;
 			normalize(&light_direction);
-			
-			Vector3f product_term = (lightColor * std::max(surface_normal.dot(light_direction), 0.0f));
-			rgb[0] += product_term[0] * constants->k_d[0];
-			rgb[1] += product_term[1] * constants->k_d[1];
-			rgb[2] += product_term[2] * constants->k_d[2];
+
+			Vector3f product_term_d = (lightColor * std::max(surface_normal.dot(light_direction), 0.0f));
+			rgb[0] += product_term_d[0] * constants->k_d[0];
+			rgb[1] += product_term_d[1] * constants->k_d[1];
+			rgb[2] += product_term_d[2] * constants->k_d[2];
 
 
 			//Specular term calculation
 			//printf("Surface Norm:\t%f,\t%f,\t%f\n", surface_normal[0], surface_normal[1], surface_normal[2]);
 			//printf("Light Direct:\t%f,\t%f,\t%f\n", light_direction[0], light_direction[1], light_direction[2]);
 			//printf("Dot: %f\n\n", surface_normal.dot(light_direction));
-			setColor(color, rgb[0], rgb[1], rgb[2]);
-			return;
+			Vector3f reflected = lightRay.dir - 2*(lightRay.dir.dot(surface_normal)) * surface_normal;
+			normalize(&reflected);
+			Vector3f viewer = -1 * ray.dir;
+			normalize(&viewer);
+			Vector3f product_term_s = lightColor * std::pow(std::max((-1*reflected).dot(viewer), 0.0f), constants->k_sp);
+			rgb[0] += product_term_s[0] * constants->k_s[0];
+			rgb[1] += product_term_s[1] * constants->k_s[1];
+			rgb[2] += product_term_s[2] * constants->k_s[2];
+			//printf("Reflected %f, %f, %f\n", reflected[0], reflected[1], reflected[2]);
+			//printf("Surface Norm %f, %f, %f\n", surface_normal[0], surface_normal[1], surface_normal[2]);
+			//printf("dot %f\n\n", (reflected.dot(surface_normal)));
 		}
-
 	}
+	if(constants->k_r[0] > 0 && constants->k_r[1] > 0 && constants->k_r[2] > 0){
+		normalize(&surface_normal2);
+		Vector3f reflected_direction = ray.dir - 2*(ray.dir.dot(surface_normal2)) * surface_normal2;
+		Ray reflected_ray(0, 1);
+		reflected_ray.pos = local_pos;
+		reflected_ray.dir = -1*reflected_direction;
+		Vector3f tempColor(0,0,0);
+		trace(reflected_ray, depth+1, &tempColor);
+		rgb[0] += constants->k_r[0] * tempColor[0];
+		rgb[1] += constants->k_r[1] * tempColor[1];
+		rgb[2] += constants->k_r[2] * tempColor[2];
+	}
+	setColor(color, rgb[0], rgb[1], rgb[2]);
+
 
 
 };
@@ -522,39 +581,63 @@ int main(int argc, char *argv[]) {
 
 	Vector3f pos2(-30, 0, -50);
 	Vector3f pos3(30, 0, -50);
-	//Sample material
-	Vector3f k_a(0.1, 0.1, 0);
-	Vector3f k_d(1, 1, 0);
-	Vector3f k_s(0, 0.8, 0.8);
-	Vector3f k_r(0, 0, 0);
-	BRDF testSphereColor1(k_a, k_d, k_s, k_r, 16);
+	Vector3f pos4(0, 0, -200);
 
+	//Sample material
+	/*
+	Vector3f k_a1(0.1, 0.1, 0);
+	Vector3f k_d1(1, 1, 0);
+	Vector3f k_s1(0.8, 0.8, 0.8);
+	Vector3f k_r1(0, 0, 0);
+	BRDF testSphereColor1(k_a1, k_d1, k_s1, k_r1, 16);
+	*/
+	Vector3f k_a2(0.1, 0, 0);
+	Vector3f k_d2(1, 0, 0);
+	Vector3f k_s2(0.8, 0.8, 0.8);
+	Vector3f k_r2(0.5, 0.5, 0.5);
+
+	Vector3f k_a3(0, 0.3, 0.3);
+	Vector3f k_d3(0, 1, 1);
+	Vector3f k_s3(0.8, 0.8, 0.8);
+	Vector3f k_r3(0, 0, 0);
+	BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 10);
+	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 10);
+
+	Vector3f pos5(-30, 0, -100);
+	Vector3f pos6(30, 0, -50);
 	//Sampe sphere
-	Sphere testSphere1(pos2, 25, &testSphereColor1);
-	Sphere testSphere2(pos3, 25, &testSphereColor1);
+	//Sphere testSphere1(pos2, 25, &testSphereColor1);
+	Sphere testSphere2(pos5, 30, &testSphereColor1);
+	Sphere testSphere3(pos6, 30, &testSphereColor2);
 	//Add objects here
 	std::vector<Shape*> objects;
-	objects.push_back(&testSphere1);
+	//objects.push_back(&testSphere1);
 	objects.push_back(&testSphere2);
+	objects.push_back(&testSphere3);
 
 	Vector3f lightPos1(200, 200, 200);
-	Vector3f lightColor1(0.6, 0.6, 0.6);
+	Vector3f lightColor1(0.3, 0.3, 0.3);
+
+	Vector3f lightPos2(0, 100, -150);
+	Vector3f lightColor2(0.5, 0.5, 0.5);
+
 
 	PointLight point1(lightPos1, lightColor1);
-
+	PointLight point2(lightPos2, lightColor2);
 	//Add Lights here
 	AggregatePrimitive primitives(objects);
 	std::vector<Light*> lightList;
 	lightList.push_back(&point1);
+	lightList.push_back(&point2);
 
-	Vector3f ambient(0.1, 0.1, 0.1);
+	Vector3f ambient(0.3, 0.3, 0.3);
 
 	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 500, 500, &primitives, &lightList, ambient, output);
+	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
 
 	myScene.render();
  	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
 	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
 
 	return 0;
-}
+f}
