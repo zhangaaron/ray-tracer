@@ -74,7 +74,7 @@ Vector3f DirectionalLight::getColor(){
 
 void DirectionalLight::generateLightRay(LocalGeo* local, Ray* lray){
 	lray->pos = local->pos;
-	lray->dir = pos;
+	lray->dir = -1 * pos;
 };
 
 /*
@@ -152,9 +152,9 @@ bool AggregatePrimitive::intersectP(Ray& ray, Shape* current){
 	for(std::vector<Shape*>::iterator it = list.begin(); it != list.end(); ++it) {
     	Shape* holder_shape = *it;
     	if (holder_shape != current){
-    		if (holder_shape->intersectP(ray)){
-    			return true;
-    		}
+			if (holder_shape->intersectP(ray)){
+				return true;
+			}
     	}
 	}
 	return false;
@@ -255,7 +255,7 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 		LocalGeo geo_light_ray(local_pos, dummy);
 		//Create a light ray from light to point of intersection
 		currentLight->generateLightRay(&geo_light_ray, &lightRay);
-		//Test to see if light is blocked, and if not, color the object. 
+		//Test to see if light is blocked, and if not, color the object.
 		if (!(objList->intersectP(lightRay, hitObject))){
 
 
@@ -308,12 +308,7 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 		rgb[2] += constants->k_r[2] * tempColor[2];
 	}
 	setColor(color, rgb[0], rgb[1], rgb[2]);
-
-
-
 };
-
-
 
 class Scene {
 	public:
@@ -347,6 +342,82 @@ void Scene::render() {
 };
 
 int main(int argc, char *argv[]) {
+
+	//Making camera
+	Vector3f cam_coord(0, 0, 150);
+	Vector3f ll(-50, -50, 50);
+	Vector3f lr(50, -50, 50);
+	Vector3f ul(-50, 50, 50);
+	Vector3f ur(50, 50, 50);
+
+	Vector3f pos1(0, 50, 0);
+	Vector3f pos2(-50, -50, 0);
+	Vector3f pos3(50, -50, 0);
+
+	//Sample material
+
+	Vector3f k_a1(0.1, 0.1, 0);
+	Vector3f k_d1(1, 1, 0);
+	Vector3f k_s1(0.8, 0.8, 0.8);
+	Vector3f k_r1(0, 0, 0);
+
+	Vector3f k_a2(0, 0.1, 0.1);
+	Vector3f k_d2(0, 0.4, 0.4);
+	Vector3f k_s2(0, 0.8, 0.8);
+	Vector3f k_r2(0, 0, 0);
+
+	Vector3f k_a3(0.2, 0.2, 0.2);
+	Vector3f k_d3(0.3, 0.3, 0.3);
+	Vector3f k_s3(0.5, 0.5, 0.5);
+	Vector3f k_r3(0, 0, 0);
+
+	BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 1000);
+	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 20);
+
+
+	Vector3f pos5(-30, 0, -100);
+	Vector3f pos6(30, 0, -50);
+	//Sampe sphere
+	//Sphere testSphere1(pos2, 25, &testSphereColor1);
+	Sphere testSphere1(pos1, 10, &testSphereColor2);
+	Sphere testSphere2(pos2, 10, &testSphereColor2);
+	Sphere testSphere3(pos3, 10, &testSphereColor2);
+	Triangle testTriangle1(pos1, pos2, pos3, &testSphereColor1);
+
+
+	//Add objects here
+	std::vector<Shape*> objects;
+	objects.push_back(&testSphere1);
+	objects.push_back(&testSphere2);
+	objects.push_back(&testSphere3);
+	objects.push_back(&testTriangle1);
+
+	Vector3f lightPos1(200, 200, 200);
+	Vector3f lightColor1(0.7, 0.7, 0.7);
+
+	Vector3f lightPos2(0, 0, -1);
+	Vector3f lightColor2(0.4, 0.4, 0.4);
+
+
+	PointLight point1(lightPos1, lightColor1);
+	DirectionalLight point2(lightPos2, lightColor2);
+	//Add Lights here
+	AggregatePrimitive primitives(objects);
+	std::vector<Light*> lightList;
+	lightList.push_back(&point1);
+	lightList.push_back(&point2);
+
+	Vector3f ambient(0.3, 0.3, 0.3);
+
+	char *output = "./helloworld.png";
+	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+
+	myScene.render();
+ 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
+	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
+
+	return 0;
+	/*
 	//Making camera
 	Vector3f cam_coord(0, 0, 100);
 	Vector3f ll(-50, -50, 0);
@@ -360,13 +431,11 @@ int main(int argc, char *argv[]) {
 	Vector3f pos4(0, 0, -200);
 
 	//Sample material
-	/*
 	Vector3f k_a1(0.1, 0.1, 0);
 	Vector3f k_d1(1, 1, 0);
 	Vector3f k_s1(0.8, 0.8, 0.8);
 	Vector3f k_r1(0, 0, 0);
-	BRDF testSphereColor1(k_a1, k_d1, k_s1, k_r1, 16);
-	*/
+
 	Vector3f k_a2(0.1, 0, 0);
 	Vector3f k_d2(1, 0, 0);
 	Vector3f k_s2(0.8, 0.8, 0.8);
@@ -409,11 +478,11 @@ int main(int argc, char *argv[]) {
 	Vector3f ambient(0.3, 0.3, 0.3);
 
 	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 800, 800, &primitives, &lightList, ambient, output);
+	Scene myScene(cam_coord, ll, lr, ul, ur, 2000, 2000, &primitives, &lightList, ambient, output);
 
 	myScene.render();
 	Transformation hello = Transformation();
 	hello.print();
 
-	return 0;
+	return 0;*/
 }

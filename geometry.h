@@ -79,33 +79,100 @@ class Shape{
 		virtual bool intersectP(Ray& ray) = 0;
 		virtual BRDF* get_material() = 0;
 };
+
 class Triangle : public Shape{
 	public:
-		Vector3f vertex1;
-		Vector3f vertex2;
-		Vector3f vertex3;
+		Vector3f v1;
+		Vector3f v2;
+		Vector3f v3;
 		BRDF* material;
-		Triangle(Vector3f v1, Vector3f v2, Vector3f v3, BRDF* m);
+		Triangle(Vector3f vertex1, Vector3f vertex2, Vector3f vertex3, BRDF* m);
 		bool intersect(Ray& ray, float* thit, LocalGeo* local);
 		bool intersectP(Ray& ray);
 		BRDF* get_material();
 	private:
 };
 
-Triangle::Triangle(Vector3f v1, Vector3f v2, Vector3f v3, BRDF* m){
-	vertex1 = v1;
-	vertex2 = v2;
-	vertex3 = v3;
+Triangle::Triangle(Vector3f vertex1, Vector3f vertex2, Vector3f vertex3, BRDF* m){
+	v1 = vertex1;
+	v2 = vertex2;
+	v3 = vertex3;
 	material = m;
 };
 
 bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
-	return false;
+	Vector3f A = v2-v1;
+	Vector3f B = v3-v1;
+	//printf(".");
+	Vector3f N = A.cross(B);
+
+	float n_dot_ray = N.dot(ray.dir);
+	//printf("Cross direction:\t%f\t%f\t%f\n", N[0], N[1], N[2]);
+	//printf("Ray direction:  \t%f\t%f\t%f\n\n", ray.dir[0], ray.dir[1], ray.dir[2]);
+	//Parallel Case
+	if(n_dot_ray == 0){
+		//printf("case 1 fail");
+		return false;
+	}
+	float d = N.dot(v1);
+	float t = -(N.dot(ray.pos) + d) / n_dot_ray;
+	//printf("\nt:\t%f\n", n_dot_ray);
+	Vector3f point = t*ray.dir + ray.pos;
+
+	if (N.dot(A.cross(point - v1)) < 0){
+		//printf("case 2 fail");
+		return false;
+	}
+
+	if (N.dot((v3-v2).cross(point - v2)) < 0){
+		//printf("case 3 fail");
+		return false;
+	}
+
+	if (N.dot((v1-v3).cross(point - v3)) < 0){
+		//printf("case 4 fail");
+		return false;
+	}
+
+	*thit = t;
+	local->pos = point;
+	local->normal = N;
+	//printf("Ray direction:  \t%f\t%f\t%f\n\n", N[0], N[1], N[2]);
+	//printf("\nhit\n");
+	return true;
 };
 
 
 bool Triangle::intersectP(Ray& ray){
-	return false;
+	Vector3f A = v2-v1;
+	Vector3f B = v3-v1;
+
+	Vector3f N = A.cross(B);
+	float n_dot_ray = N.dot(ray.dir);
+	//Parallel Case
+	if(n_dot_ray == 0){
+		return false;
+	}
+	float d = N.dot(v1);
+	float t = -(N.dot(ray.pos) + d) / n_dot_ray;
+
+	Vector3f point = t*ray.dir + ray.pos;
+	if(t < 0.00000000000001){
+		return false;
+	}
+	if (N.dot(A.cross(point - v1)) < 0){
+		return false;
+	}
+
+	if (N.dot((v3-v2).cross(point - v2)) < 0){
+		return false;
+	}
+
+	if (N.dot((v1-v3).cross(point - v3)) < 0){
+		return false;
+	}
+
+	return true;
 };
 
 BRDF* Triangle::get_material(){
@@ -140,15 +207,6 @@ BRDF* Sphere::get_material(){
 	return material;
 };
 
-/* 	r(t) = e + d*t
-	define P to be point on surface of sphere, and p to be the center of the sphere. 
-	then: 
-
-	(P - p) dot (P - p) - r^2 = 0
-
-	set P = to r(t) and solve for t. This gives a quadratic equation with determinant. If t < 0, no real value of 
-	t gives intersection.  
-*/
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 
 	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
@@ -166,11 +224,17 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 		local->pos = *thit * d + e; 
 		local->normal = (transformation.matrix_trans.linear().inverse().transpose() 
 							* (local->pos - c)).normalized(); //This is a normalized vector transformed back into the world space!
+
+
+
+// =======	Old commit stuff
+// 		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d));
+// 		local->pos = *thit * d + e;
+// 		local->normal = (local->pos - c)/radius;
+// >>>>>>> 755496a27f3c6b7c7d7bc54c68d51b4a6f556a04
 		return true;
 	}
 };
-
-
 
 bool Sphere::intersectP(Ray& ray){
 	Vector3f e = ray.pos;
@@ -179,7 +243,7 @@ bool Sphere::intersectP(Ray& ray){
 	Vector3f c = pos;
 
 	float determinant = ((d.dot(e-c)) * (d.dot(e-c))) - (d.dot(d))*((e-c).dot(e-c) - radius*radius);
-	if (determinant < 0){
+	if (determinant < 0 || ((-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d))) < -0.0001 ){
 		return false;
 	}else{
 		return true;
