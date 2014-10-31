@@ -341,8 +341,7 @@ void Scene::render() {
 	myFilm.writeImage();
 };
 
-int main(int argc, char *argv[]) {
-
+void test_transformations() {
 	//Making camera
 	Vector3f cam_coord(0, 0, 150);
 	Vector3f ll(-50, -50, 50);
@@ -350,7 +349,7 @@ int main(int argc, char *argv[]) {
 	Vector3f ul(-50, 50, 50);
 	Vector3f ur(50, 50, 50);
 
-	Vector3f pos1(0, 50, 0);
+	Vector3f pos1(0, 0, 0);
 	Vector3f pos2(-50, -50, 0);
 	Vector3f pos3(50, -50, 0);
 
@@ -361,36 +360,14 @@ int main(int argc, char *argv[]) {
 	Vector3f k_s1(0.8, 0.8, 0.8);
 	Vector3f k_r1(0, 0, 0);
 
-	Vector3f k_a2(0, 0.1, 0.1);
-	Vector3f k_d2(0, 0.4, 0.4);
-	Vector3f k_s2(0, 0.8, 0.8);
-	Vector3f k_r2(0, 0, 0);
+	BRDF testSphereColor1(k_a1, k_d1, k_s1, k_r1, 1000);
+	Sphere testSphere1(pos1, 10, &testSphereColor1);
+	Vector3f down(0, 0, 0);
+	testSphere1.transformation.translate(down);
 
-	Vector3f k_a3(0.2, 0.2, 0.2);
-	Vector3f k_d3(0.3, 0.3, 0.3);
-	Vector3f k_s3(0.5, 0.5, 0.5);
-	Vector3f k_r3(0, 0, 0);
-
-	BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 1000);
-	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 20);
-
-
-	Vector3f pos5(-30, 0, -100);
-	Vector3f pos6(30, 0, -50);
-	//Sampe sphere
-	//Sphere testSphere1(pos2, 25, &testSphereColor1);
-	Sphere testSphere1(pos1, 10, &testSphereColor2);
-	Sphere testSphere2(pos2, 10, &testSphereColor2);
-	Sphere testSphere3(pos3, 10, &testSphereColor2);
-	Triangle testTriangle1(pos1, pos2, pos3, &testSphereColor1);
-
-
-	//Add objects here
 	std::vector<Shape*> objects;
 	objects.push_back(&testSphere1);
-	objects.push_back(&testSphere2);
-	objects.push_back(&testSphere3);
-	objects.push_back(&testTriangle1);
+
 
 	Vector3f lightPos1(200, 200, 200);
 	Vector3f lightColor1(0.7, 0.7, 0.7);
@@ -409,12 +386,88 @@ int main(int argc, char *argv[]) {
 
 	Vector3f ambient(0.3, 0.3, 0.3);
 
-	char *output = "./helloworld.png";
+	char *output = "./helloworld1.png";
 	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
 
 	myScene.render();
- 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
-	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
+}
+
+int main(int argc, char *argv[]) {
+
+	test_transformations();
+
+	// //Making camera
+	// Vector3f cam_coord(0, 0, 150);
+	// Vector3f ll(-50, -50, 50);
+	// Vector3f lr(50, -50, 50);
+	// Vector3f ul(-50, 50, 50);
+	// Vector3f ur(50, 50, 50);
+
+	// Vector3f pos1(0, 50, 0);
+	// Vector3f pos2(-50, -50, 0);
+	// Vector3f pos3(50, -50, 0);
+
+	// //Sample material
+
+	// Vector3f k_a1(0.1, 0.1, 0);
+	// Vector3f k_d1(1, 1, 0);
+	// Vector3f k_s1(0.8, 0.8, 0.8);
+	// Vector3f k_r1(0, 0, 0);
+
+	// Vector3f k_a2(0, 0.1, 0.1);
+	// Vector3f k_d2(0, 0.4, 0.4);
+	// Vector3f k_s2(0, 0.8, 0.8);
+	// Vector3f k_r2(0, 0, 0);
+
+	// Vector3f k_a3(0.2, 0.2, 0.2);
+	// Vector3f k_d3(0.3, 0.3, 0.3);
+	// Vector3f k_s3(0.5, 0.5, 0.5);
+	// Vector3f k_r3(0, 0, 0);
+
+	// BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 1000);
+	// BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 20);
+
+
+	// Vector3f pos5(-30, 0, -100);
+	// Vector3f pos6(30, 0, -50);
+	// //Sampe sphere
+	// //Sphere testSphere1(pos2, 25, &testSphereColor1);
+	// Sphere testSphere1(pos1, 10, &testSphereColor2);
+	// Sphere testSphere2(pos2, 10, &testSphereColor2);
+	// Sphere testSphere3(pos3, 10, &testSphereColor2);
+	// Triangle testTriangle1(pos1, pos2, pos3, &testSphereColor1);
+
+
+	// //Add objects here
+	// std::vector<Shape*> objects;
+	// objects.push_back(&testSphere1);
+	// objects.push_back(&testSphere2);
+	// objects.push_back(&testSphere3);
+	// objects.push_back(&testTriangle1);
+
+	// Vector3f lightPos1(200, 200, 200);
+	// Vector3f lightColor1(0.7, 0.7, 0.7);
+
+	// Vector3f lightPos2(0, 0, -1);
+	// Vector3f lightColor2(0.4, 0.4, 0.4);
+
+
+	// PointLight point1(lightPos1, lightColor1);
+	// DirectionalLight point2(lightPos2, lightColor2);
+	// //Add Lights here
+	// AggregatePrimitive primitives(objects);
+	// std::vector<Light*> lightList;
+	// lightList.push_back(&point1);
+	// lightList.push_back(&point2);
+
+	// Vector3f ambient(0.3, 0.3, 0.3);
+
+	// char *output = "./helloworld.png";
+	// Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+
+	// myScene.render();
+ // 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
+	// lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
 
 	return 0;
 	/*
