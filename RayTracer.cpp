@@ -7,10 +7,6 @@
 #include <time.h>
 #include <math.h>
 #include "lodepng.h"
-#include "sampler.h"
-#include "transformation.h"
-#include "geometry.h"
-#include "camera.h"
 
 using namespace std;
 using namespace Eigen;
@@ -20,6 +16,102 @@ void print_3f(Vector3f x){
 	printf("%f, \t%f, \t%f\n", x[0], x[1], x[2]);
 };
 
+class Sample {
+	public:
+		int x, y;
+		Sample(int x_in, int y_in);
+};
+
+Sample::Sample(int x_in, int y_in){
+	x = x_in;
+	y = y_in;
+};
+
+class BRDF{
+	public:
+		Vector3f k_s;
+		Vector3f k_a;
+		Vector3f k_r;
+		Vector3f k_d;
+		float k_sp;
+		BRDF(Vector3f a, Vector3f d, Vector3f s, Vector3f r, float sp);
+		void print();
+	private:
+};
+
+BRDF::BRDF(Vector3f a, Vector3f d, Vector3f s, Vector3f r, float sp){
+	k_s = s;
+	k_a = a;
+	k_r = r;
+	k_d = d;
+	k_sp = sp;
+};
+
+class Ray {
+	public:
+		Vector3f pos;
+		Vector3f dir;
+		float t_min, t_max;
+		Ray(float min_t, float max_t);
+		Ray(Vector3f pos_input, Vector3f dir_input, float min_t, float max_t);
+	private:
+};
+
+Ray::Ray(float min_t, float max_t){
+	t_min = min_t;
+	t_max = max_t;
+};
+
+Ray::Ray(Vector3f pos_input, Vector3f dir_input, float min_t, float max_t){
+	pos = pos_input;
+	dir = dir_input;
+	t_min = min_t;
+	t_max = max_t;
+};
+
+class LocalGeo{
+	public:
+		Vector3f pos;
+		Vector3f normal;
+		LocalGeo(Vector3f position, Vector3f norm);
+};
+
+LocalGeo::LocalGeo(Vector3f position, Vector3f norm){
+	pos = position;
+	normal = norm;
+};
+
+class Transformation {
+	public:
+		Transform<float, 3, Affine, DontAlign> matrix_trans;
+		Transform<float, 3, Affine, DontAlign> matrix_inv_transp; //Inverse transpose of the transformation matrix, used for transforming the normal vectors. 
+		Transformation() { //Initializes a transformation that does nothing. 
+			matrix_trans = AngleAxisf(0, Vector3f::UnitX());
+			matrix_inv_transp = AngleAxisf(0, Vector3f::UnitX()); 
+		}
+		void translate(Vector3f xyz) {
+			matrix_trans = matrix_trans * Translation<float, 3>(xyz);
+			//matrix_inv_transp = matrix_trans.transpose().inverse() //Don't think order should matter here? 
+		}
+		void rotate(Vector3f xyz) {
+			matrix_trans = matrix_trans * ( AngleAxisf(xyz[0], Vector3f::UnitX()) * 
+										 AngleAxisf(xyz[1], Vector3f::UnitY()) *
+										  AngleAxisf(xyz[2], Vector3f::UnitZ()));
+		}
+		// void scale(Vector3f xyz) {
+
+		// }
+	private: 
+};
+
+
+class Shape{
+	public:
+		Transformation trans;
+		virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
+		virtual bool intersectP(Ray& ray) = 0;
+		virtual BRDF* get_material() = 0;
+};
 
 class Light{
 	public:
@@ -88,6 +180,107 @@ AmbientLight::AmbientLight(Vector3f c){
 	lightColor = c;
 };*/
 
+class Triangle : public Shape{
+	public:
+		Vector3f vertex1;
+		Vector3f vertex2;
+		Vector3f vertex3;
+		BRDF* material;
+		Triangle(Vector3f v1, Vector3f v2, Vector3f v3, BRDF* m);
+		bool intersect(Ray& ray, float* thit, LocalGeo* local);
+		bool intersectP(Ray& ray);
+		BRDF* get_material();
+	private:
+};
+
+Triangle::Triangle(Vector3f v1, Vector3f v2, Vector3f v3, BRDF* m){
+	vertex1 = v1;
+	vertex2 = v2;
+	vertex3 = v3;
+	material = m;
+};
+
+bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
+	return false;
+};
+
+
+bool Triangle::intersectP(Ray& ray){
+	return false;
+};
+
+BRDF* Triangle::get_material(){
+	return material;
+};
+
+
+
+
+class Sphere : public Shape{
+	public:
+		float radius;
+		Vector3f pos;
+		BRDF* material;
+		Sphere(Vector3f position, float r, BRDF* m);
+		bool intersect(Ray& ray, float* thit, LocalGeo* local);
+		bool intersectP(Ray& ray);
+		BRDF* get_material();
+	private:
+};
+
+
+Sphere::Sphere(Vector3f position, float r, BRDF* m){
+	radius = r;
+	pos = position;
+	material = m;
+};
+
+BRDF* Sphere::get_material(){
+	return material;
+};
+
+/* 	r(t) = e + d*t
+	define P to be point on surface of sphere, and p to be the center of the sphere. 
+	then: 
+
+	(P - p) dot (P - p) - r^2 = 0
+
+	set P = to r(t) and solve for t. This gives a quadratic equation with determinant. If t < 0, no real value of 
+	t gives intersection.  
+*/
+bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
+	Vector3f e = ray.pos;
+	Vector3f d = ray.dir;
+
+	Vector3f c = pos;
+
+	float determinant = ((d.dot(e-c)) * (d.dot(e-c))) - (d.dot(d))*((e-c).dot(e-c) - radius*radius);
+	if (determinant < 0){
+		return false;
+	}
+	else{
+		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d)); //For what t value we get a hit. Always take negative value of det since its closer to viewer. 
+		local->pos = *thit * d + e; 
+		local->normal = (local->pos - c)/radius; 
+		return true;
+	}
+};
+
+
+
+bool Sphere::intersectP(Ray& ray){
+	Vector3f e = ray.pos;
+	Vector3f d = ray.dir;
+
+	Vector3f c = pos;
+
+	float determinant = ((d.dot(e-c)) * (d.dot(e-c))) - (d.dot(d))*((e-c).dot(e-c) - radius*radius);
+	if (determinant < 0){
+		return false;
+	}else{
+		return true;
+	}
+};
 
 class Intersection{
 	public:
@@ -161,6 +354,32 @@ bool AggregatePrimitive::intersectP(Ray& ray, Shape* current){
 } ;
 
 
+class Sampler {
+	public:
+		int x_max, y_max;
+		int x, y;
+		Sampler(int x_max, int y_max){
+			this->x_max = x_max;
+			this->y_max= y_max;
+			x = 0;
+			y = 0;
+		};
+		bool hasNext();
+		void next(int *XYCoords);
+
+	private:
+};
+
+bool Sampler::hasNext(){
+	return (x < x_max && y < y_max);
+}
+void Sampler::next(int* XYCoords){
+	XYCoords[0] = x;
+	XYCoords[1] = y;
+	x = (x + 1) % x_max;
+	if (x == 0)	y++;
+};
+
 
 class Film {
 
@@ -192,7 +411,39 @@ void Film::writeImage(){
 	lodepng_encode24_file(fileName ,RGBOutputArr, width, height);
 }
 
+class Camera {
+	public:
+		Vector3f camera_coord;
+		Vector3f ll;
+		Vector3f lr;
+		Vector3f ul;
+		Vector3f ur;
+		int output_x;
+		int output_y;
 
+		Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft, Vector3f uright, int x, int y);
+		void generateRay(int *XYCoords, Ray* ray);
+	private:
+};
+
+Camera::Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft, Vector3f uright, int x, int y){
+	camera_coord = coord;
+	ll = lleft;
+	lr = lright;
+	ul = ulleft;
+	ur = uright;
+	output_x = x;
+	output_y = y;
+};
+
+void Camera::generateRay(int *XYCoords, Ray* ray){
+	float u = XYCoords[0] / ((float)output_x);
+	float v = XYCoords[1] / ((float)output_y);
+	//printf("u: %d %f\tv: %d %f\n", sample.x, u, sample.y, v);
+	Vector3f P = (1-u)*(v*ll + (1-v)* ul) + (u)*(v*lr + (1-v) * ur);
+	ray->pos = camera_coord;
+	ray->dir = P - camera_coord;
+};
 
 class RayTracer{
 	public:
@@ -340,6 +591,7 @@ Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f
 };
 
 void Scene::render() {
+	Sample sample (0,0);
 	Ray ray(0, 1);
 	while (mySampler.hasNext()) {
 		int XYCoords[2];
