@@ -11,6 +11,8 @@
 #include "transformation.h"
 #include "geometry.h"
 #include "camera.h"
+#include "lighting.h"
+#include "film.h"
 
 using namespace std;
 using namespace Eigen;
@@ -20,73 +22,6 @@ void print_3f(Vector3f x){
 	printf("%f, \t%f, \t%f\n", x[0], x[1], x[2]);
 };
 
-
-class Light{
-	public:
-		virtual void generateLightRay(LocalGeo* local, Ray* lray) = 0;
-		virtual Vector3f getColor() = 0;
-	private:
-};
-
-class PointLight : public Light{
-	public:
-		Vector3f pos;
-		Vector3f lightColor;
-		PointLight(Vector3f pos, Vector3f lightColor);
-		void generateLightRay(LocalGeo* local, Ray* lray);
-		Vector3f getColor();
-};
-
-
-PointLight::PointLight(Vector3f position, Vector3f c){
-	pos = position;
-	lightColor = c;
-};
-
-void PointLight::generateLightRay(LocalGeo* local, Ray* lray){
-	lray->pos = local->pos;
-	lray->dir = pos - local->pos;
-	return;
-};
-
-Vector3f PointLight::getColor(){
-	return lightColor;
-}
-
-class DirectionalLight : public Light{
-	public:
-		Vector3f pos;
-		Vector3f lightColor;
-		DirectionalLight(Vector3f pos, Vector3f c);
-		void generateLightRay(LocalGeo* local, Ray* lray);
-		Vector3f getColor();
-
-};
-
-DirectionalLight::DirectionalLight(Vector3f position, Vector3f c){
-	pos = position;
-	lightColor = c;
-};
-
-Vector3f DirectionalLight::getColor(){
-	return lightColor;
-}
-
-void DirectionalLight::generateLightRay(LocalGeo* local, Ray* lray){
-	lray->pos = local->pos;
-	lray->dir = -1 * pos;
-};
-
-/*
-class AmbientLight{
-	public:
-		Vector3f lightColor;
-		AmbientLight(Color* c);
-};
-
-AmbientLight::AmbientLight(Vector3f c){
-	lightColor = c;
-};*/
 
 
 class Intersection{
@@ -110,7 +45,7 @@ class AggregatePrimitive{
 		bool intersect(Ray& ray, float* thit, Intersection* in, Shape* current);
 		bool intersectP(Ray& ray, Shape* current);
 	private:
-};
+}; 
 
 AggregatePrimitive::AggregatePrimitive(vector<Shape*> l){
 	list = l;
@@ -162,35 +97,35 @@ bool AggregatePrimitive::intersectP(Ray& ray, Shape* current){
 
 
 
-class Film {
+// class Film {
 
-	public:
-		int width, height;
-		char *fileName;
-		unsigned char *RGBOutputArr;
-		Film(int output_x, int output_y, char *fileName);
-		void commit(int *XYCoords, Vector3f color);
-		void writeImage();
-	private:
-};
+// 	public:
+// 		int width, height;
+// 		char *fileName;
+// 		unsigned char *RGBOutputArr;
+// 		Film(int output_x, int output_y, char *fileName);
+// 		void commit(int *XYCoords, Vector3f color);
+// 		void writeImage();
+// 	private:
+// };
 
-Film::Film(int output_x, int output_y, char *fileName){
-	width = output_x;
-	height = output_y;
-	this->fileName = fileName;
-	RGBOutputArr = (unsigned char *)malloc(width * height * 3);
-}
+// Film::Film(int output_x, int output_y, char *fileName){
+// 	width = output_x;
+// 	height = output_y;
+// 	this->fileName = fileName;
+// 	RGBOutputArr = (unsigned char *)malloc(width * height * 3);
+// }
 
-void Film::commit(int *XYCoords, Vector3f color){
-	int arrayLoctoWrite = (XYCoords[0] + XYCoords[1] * width) * 3;
-	RGBOutputArr[arrayLoctoWrite] = (int)round((color[0])*255);
-	RGBOutputArr[arrayLoctoWrite + 1] = (int)round((color[1])*255);
-	RGBOutputArr[arrayLoctoWrite + 2] = (int)round((color[2])*255);
-}
+// void Film::commit(int *XYCoords, Vector3f color){
+// 	int arrayLoctoWrite = (XYCoords[0] + XYCoords[1] * width) * 3;
+// 	RGBOutputArr[arrayLoctoWrite] = (int)round((color[0])*255);
+// 	RGBOutputArr[arrayLoctoWrite + 1] = (int)round((color[1])*255);
+// 	RGBOutputArr[arrayLoctoWrite + 2] = (int)round((color[2])*255);
+// }
 
-void Film::writeImage(){
-	lodepng_encode24_file(fileName ,RGBOutputArr, width, height);
-}
+// void Film::writeImage(){
+// 	lodepng_encode24_file(fileName ,RGBOutputArr, width, height);
+// }
 
 
 
@@ -217,12 +152,6 @@ void setColor(Vector3f* color, float r, float g, float b){
 	(*color)[2] = std::min(b, 1.0f);
 }
 
-void normalize(Vector3f* v){
-	float len = sqrt(((*v)[0] * (*v)[0]) + ((*v)[1] * (*v)[1]) + ((*v)[2] * (*v)[2]));
-	(*v)[0] = (*v)[0] / len;
-	(*v)[1] = (*v)[1] / len;
-	(*v)[2] = (*v)[2] / len;
-}
 
 void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 	if (depth > 6){
@@ -365,80 +294,87 @@ std::vector<std::string> split(const std::string &s, char delim) {
 
 
 
+
+void test_transformations() {
+
+}
+
 int main(int argc, char *argv[]) {
-	//Making camera
-	/*
-	Vector3f cam_coord(0, 0, 150);
-	Vector3f ll(-50, -50, 50);
-	Vector3f lr(50, -50, 50);
-	Vector3f ul(-50, 50, 50);
-	Vector3f ur(50, 50, 50);
 
-	Vector3f k_a3(0, 0.1, 0.1);
-	Vector3f k_d3(0, 0.4, 0.4);
-	Vector3f k_s3(0, 0.8, 0.8);
-	Vector3f k_r3(0, 0, 0);
-	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 1000);
+	test_transformations();
 
-	Vector3f pos5(-30, 0, -100);
-	Vector3f pos2(30, 0, -100);
-	//Sampe sphere
-	Sphere testSphere2(pos2, 10, &testSphereColor2);
-	Sphere testSphere1(pos5, 10, &testSphereColor2);
+	// //Making camera
+	// Vector3f cam_coord(0, 0, 150);
+	// Vector3f ll(-50, -50, 50);
+	// Vector3f lr(50, -50, 50);
+	// Vector3f ul(-50, 50, 50);
+	// Vector3f ur(50, 50, 50);
 
-	std::vector<Shape*> objects;
-	//objects.push_back(&testSphere1);
-	//objects.push_back(&testSphere2);
-	//objects.push_back(&testSphere3);
-	//objects.push_back(&testTriangle1);
+	// Vector3f pos1(0, 50, 0);
+	// Vector3f pos2(-50, -50, 0);
+	// Vector3f pos3(50, -50, 0);
 
-	Vector3f lightPos1(200, 200, 200);
-	Vector3f lightColor1(0.7, 0.7, 0.7);
+	// //Sample material
 
-	Vector3f lightPos2(0, 0, -1);
-	Vector3f lightColor2(0.4, 0.4, 0.4);
+	// Vector3f k_a1(0.1, 0.1, 0);
+	// Vector3f k_d1(1, 1, 0);
+	// Vector3f k_s1(0.8, 0.8, 0.8);
+	// Vector3f k_r1(0, 0, 0);
 
-	PointLight point1(lightPos1, lightColor1);
-	DirectionalLight point2(lightPos2, lightColor2);
-	std::vector<Light*> lightList;
-	lightList.push_back(&point1);
+	// Vector3f k_a2(0, 0.1, 0.1);
+	// Vector3f k_d2(0, 0.4, 0.4);
+	// Vector3f k_s2(0, 0.8, 0.8);
+	// Vector3f k_r2(0, 0, 0);
 
-	Vector3f ambient(1, 1, 1);
-	//lightList.push_back(&point2);
+	// Vector3f k_a3(0.2, 0.2, 0.2);
+	// Vector3f k_d3(0.3, 0.3, 0.3);
+	// Vector3f k_s3(0.5, 0.5, 0.5);
+	// Vector3f k_r3(0, 0, 0);
+
+	// BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 1000);
+	// BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 20);
 
 
-	string line;
-	ifstream myfile ("scene12.obj");
+	// Vector3f pos5(-30, 0, -100);
+	// Vector3f pos6(30, 0, -50);
+	// //Sampe sphere
+	// //Sphere testSphere1(pos2, 25, &testSphereColor1);
+	// Sphere testSphere1(pos1, 10, &testSphereColor2);
+	// Sphere testSphere2(pos2, 10, &testSphereColor2);
+	// Sphere testSphere3(pos3, 10, &testSphereColor2);
+	// Triangle testTriangle1(pos1, pos2, pos3, &testSphereColor1);
 
-	std::vector<std::string> x;
-	std::vector<Vector3f> vertexList;
-	printf("Starting obj file parsing\n");
-	if (myfile.is_open()){
-		while ( getline (myfile,line) ){
-			if(line[0] == 'v'){
-				x = split(line, ' ');
-				Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
-				vertexList.push_back(ver);
-			}
-			if(line[0] == 'f'){
-				x = split(line, ' ');
-				Triangle tri(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1 ], &testSphereColor2);
-				objects.push_back(&tri);
-			}
-		}
-		myfile.close();
-	}
 
-	printf("Ending obj file parsing %d\n", objects.size());
+	// //Add objects here
+	// std::vector<Shape*> objects;
+	// objects.push_back(&testSphere1);
+	// objects.push_back(&testSphere2);
+	// objects.push_back(&testSphere3);
+	// objects.push_back(&testTriangle1);
 
-	char *output = "./helloworld.png";
-	AggregatePrimitive primitives(objects);
-	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+	// Vector3f lightPos1(200, 200, 200);
+	// Vector3f lightColor1(0.7, 0.7, 0.7);
 
-	myScene.render();
- 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
-	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
-	return 0;*/
+	// Vector3f lightPos2(0, 0, -1);
+	// Vector3f lightColor2(0.4, 0.4, 0.4);
+
+
+	// PointLight point1(lightPos1, lightColor1);
+	// DirectionalLight point2(lightPos2, lightColor2);
+	// //Add Lights here
+	// AggregatePrimitive primitives(objects);
+	// std::vector<Light*> lightList;
+	// lightList.push_back(&point1);
+	// lightList.push_back(&point2);
+
+	// Vector3f ambient(0.3, 0.3, 0.3);
+
+	// char *output = "./helloworld.png";
+	// Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+
+	// myScene.render();
+ // 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
+	// lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
 
 
 	//Making camera
@@ -564,8 +500,8 @@ int main(int argc, char *argv[]) {
 	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
 
 	myScene.render();
- 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
-	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
+	Transformation hello = Transformation();
+	hello.print();
 
 	return 0;
 }

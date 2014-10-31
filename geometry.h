@@ -10,6 +10,14 @@
 #include "transformation.h"
 
 
+void normalize(Vector3f* v){
+	float len = sqrt(((*v)[0] * (*v)[0]) + ((*v)[1] * (*v)[1]) + ((*v)[2] * (*v)[2]));
+	(*v)[0] = (*v)[0] / len;
+	(*v)[1] = (*v)[1] / len;
+	(*v)[2] = (*v)[2] / len;
+}
+
+
 class BRDF{
 	public:
 		Vector3f k_s;
@@ -66,7 +74,7 @@ LocalGeo::LocalGeo(Vector3f position, Vector3f norm){
 
 class Shape{
 	public:
-		Transformation trans;
+		Transformation transformation;
 		virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
 		virtual bool intersectP(Ray& ray) = 0;
 		virtual BRDF* get_material() = 0;
@@ -191,6 +199,8 @@ Sphere::Sphere(Vector3f position, float r, BRDF* m){
 	radius = r;
 	pos = position;
 	material = m;
+	// transformation.translate(position);
+	// transformation.scale()
 };
 
 BRDF* Sphere::get_material(){
@@ -198,8 +208,10 @@ BRDF* Sphere::get_material(){
 };
 
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
-	Vector3f e = ray.pos;
-	Vector3f d = ray.dir;
+
+	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
+	Vector3f e = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f d = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
 
 	Vector3f c = pos;
 
@@ -208,17 +220,20 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 		return false;
 	}
 	else{
-		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d));
+		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d)); //For what t value we get a hit. Always take negative value of det since its closer to viewer. 
 		local->pos = *thit * d + e;
-		local->normal = (local->pos - c)/radius;
+		local->normal = (transformation.matrix_trans.linear().inverse().transpose()
+							* (local->pos - c)).normalized(); //This is a normalized vector transformed back into the world space!
+
+
+
 		return true;
 	}
 };
 
 bool Sphere::intersectP(Ray& ray){
-
-	Vector3f e = ray.pos;
-	Vector3f d = ray.dir;
+	Vector3f e = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f d = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
 
 	Vector3f c = pos;
 
