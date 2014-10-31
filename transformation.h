@@ -19,17 +19,29 @@ class Transformation {
 			matrix_trans = AngleAxisf(0, Vector3f::UnitX());
 			matrix_inv_transp = AngleAxisf(0, Vector3f::UnitX()); 
 		}
+		void set_inverse_transpose() {
+			matrix_inv_transp = matrix_trans.inverse().matrix().transpose();
+		}
 		void translate(Vector3f xyz) {
 			matrix_trans = matrix_trans * Translation<float, 3>(xyz);
-			//matrix_inv_transp = matrix_trans.transpose().inverse() //Don't think order should matter here? 
+			set_inverse_transpose();
 		}
 		void rotate(Vector3f xyz) {
 			matrix_trans = matrix_trans * ( AngleAxisf(xyz[0], Vector3f::UnitX()) * 
 										 AngleAxisf(xyz[1], Vector3f::UnitY()) *
 										  AngleAxisf(xyz[2], Vector3f::UnitZ()));
+			set_inverse_transpose();
 		}
-		// void scale(Vector3f xyz) {
+		 void scale(Vector3f xyz) {
+		 	matrix_trans = matrix_trans * Scaling(xyz);
+		 	set_inverse_transpose();
+		 }
 
-		// }
+		void print() {
+			cout << "Rotation matrix: \n" << matrix_trans.rotation() << "\n";
+			cout << "Translation: \n " << matrix_trans.translation() << "\n"; 
+		}
+		
+
 	private: 
 };

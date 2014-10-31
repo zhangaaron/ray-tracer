@@ -110,7 +110,7 @@ class AggregatePrimitive{
 		bool intersect(Ray& ray, float* thit, Intersection* in, Shape* current);
 		bool intersectP(Ray& ray, Shape* current);
 	private:
-};
+}; 
 
 AggregatePrimitive::AggregatePrimitive(vector<Shape*> l){
 	list = l;
@@ -217,12 +217,6 @@ void setColor(Vector3f* color, float r, float g, float b){
 	(*color)[2] = std::min(b, 1.0f);
 }
 
-void normalize(Vector3f* v){
-	float len = sqrt(((*v)[0] * (*v)[0]) + ((*v)[1] * (*v)[1]) + ((*v)[2] * (*v)[2]));
-	(*v)[0] = (*v)[0] / len;
-	(*v)[1] = (*v)[1] / len;
-	(*v)[2] = (*v)[2] / len;
-}
 
 void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 	if (depth > 6){
@@ -418,8 +412,8 @@ int main(int argc, char *argv[]) {
 	Scene myScene(cam_coord, ll, lr, ul, ur, 800, 800, &primitives, &lightList, ambient, output);
 
 	myScene.render();
- 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
-	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
+	Transformation hello = Transformation();
+	hello.print();
 
 	return 0;
 }
