@@ -362,8 +362,10 @@ void test_transformations() {
 
 	BRDF testSphereColor1(k_a1, k_d1, k_s1, k_r1, 1000);
 	Sphere testSphere1(pos1, 10, &testSphereColor1);
-	Vector3f down(0, 0, 0);
-	testSphere1.transformation.translate(down);
+	//Vector3f down(0, -50, 0);
+	Vector3f up(0, 50, 0);
+	//testSphere1.transformation.translate(down);
+	testSphere1.transformation.translate(up);
 
 	std::vector<Shape*> objects;
 	objects.push_back(&testSphere1);

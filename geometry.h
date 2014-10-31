@@ -210,8 +210,8 @@ BRDF* Sphere::get_material(){
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 
 	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
-	Vector3f e = transformation.matrix_trans.inverse().linear() * ray.pos; //Don't scale the position of the ray!
-	Vector3f d = transformation.matrix_trans.inverse() * ray.dir; //Gotta figure out inconsistent documentation here!
+	Vector3f e = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f d = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
 
 	Vector3f c = pos;
 
@@ -237,8 +237,8 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 };
 
 bool Sphere::intersectP(Ray& ray){
-	Vector3f e = transformation.matrix_trans.inverse().linear() * ray.pos; //Don't scale the position of the ray!
-	Vector3f d = transformation.matrix_trans.inverse() * ray.dir; //Gotta figure out inconsistent documentation here!
+	Vector3f e = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f d = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
 
 	Vector3f c = pos;
 
