@@ -372,9 +372,11 @@ void test_transformations() {
 	Vector3f occlude(50, 50, 0);
 	Vector3f hello(0, 50, -50);
 	Vector3f rotate(-50, 50, 100);
+	Vector3f scale(3, 3, 3);
 	testSphere1.transformation.rotate(rotate);
 	testSphere1.transformation.translate(hello);
 	testSphere1.transformation.rotate(-rotate);
+	testSphere1.transformation.scale(scale);
 	//testSphere2.transformation.translate(occlude); //Red should occlude yellow
 
 	std::vector<Shape*> objects;
