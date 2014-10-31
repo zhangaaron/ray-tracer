@@ -448,6 +448,13 @@ int main(int argc, char *argv[]) {
 	Vector3f ul(-0.1, 0.1, 5);
 	Vector3f ur(0.1, 0.1, 5);
 
+	/*
+	Vector3f cam_coord(0, 0, 150);
+	Vector3f ll(-50, -50, 100);
+	Vector3f lr(50, -50, 100);
+	Vector3f ul(-50, 50, 100);
+	Vector3f ur(50, 50, 100);
+	*/
 	//Sample material
 
 	Vector3f k_a1(0.1, 0.1, 0);
@@ -455,8 +462,8 @@ int main(int argc, char *argv[]) {
 	Vector3f k_s1(0.8, 0.8, 0.8);
 	Vector3f k_r1(0, 0, 0);
 
-	Vector3f k_a2(0, 0.1, 0.1);
-	Vector3f k_d2(0, 0.4, 0.4);
+	Vector3f k_a2(0, 0.3, 0.3);
+	Vector3f k_d2(0, 0.8, 0.8);
 	Vector3f k_s2(0, 0.8, 0.8);
 	Vector3f k_r2(0, 0, 0);
 
@@ -477,9 +484,9 @@ int main(int argc, char *argv[]) {
 	Vector3f post2(-50, -50, 0);
 	Vector3f post3(50, -50, 0);
 
-	Vector3f postt1(0, 100, -10);
-	Vector3f postt2(-100, -100, -10);
-	Vector3f postt3(100, -100, -10);
+	Vector3f postt1(0, 0, 78);
+	Vector3f postt2(45, 45, 0);
+	Vector3f postt3(45, -45, 0);
 
 	Sphere testSphere1(pos1, 10, &testSphereColor2);
 	Sphere testSphere2(pos2, 10, &testSphereColor2);
@@ -498,15 +505,15 @@ int main(int argc, char *argv[]) {
 	//objects.push_back(&testTriangle2);
 	//objects.push_back(&testTriangle3);
 
-	Vector3f lightPos1(200, 200, 200);
-	Vector3f lightColor1(0.7, 0.7, 0.7);
+	Vector3f lightPos1(50, 0, 100);
+	Vector3f lightColor1(1, 1, 1);
 
 	Vector3f lightPos2(0, 0, -1);
 	Vector3f lightColor2(0.4, 0.4, 0.4);
 
 
 	PointLight point1(lightPos1, lightColor1);
-	//DirectionalLight point2(lightPos2, lightColor2);
+	DirectionalLight point2(lightPos2, lightColor2);
 	//Add Lights here
 
 
@@ -514,32 +521,38 @@ int main(int argc, char *argv[]) {
 
 	string line;
 	ifstream myfile ("bunny.obj");
-	/*
+
 	std::vector<std::string> x;
 	std::vector<Vector3f> vertexList;
 	printf("Starting obj file parsing\n");
+	std::vector<Triangle> objFile;
 	if (myfile.is_open()){
 		while ( getline (myfile,line) ){
 			if(line[0] == 'v'){
 				x = split(line, ' ');
 				Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
 				vertexList.push_back(ver);
+				print_3f(ver);
 			}
 			if(line[0] == 'f'){
 				x = split(line, ' ');
-				Triangle tri(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1 ], &testSphereColor1);
-				objects.push_back(&tri);
+				Vector3f temp(-3, -3, 5);
+				postt1 = postt1 + temp;
+				Triangle tri = Triangle(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1], &testSphereColor1);
+				objFile.push_back(tri);
 			}
 		}
 		myfile.close();
 	}
-	*/
+
+	for(std::vector<Triangle>::iterator it = objFile.begin(); it != objFile.end(); ++it) {
+    	objects.push_back(&(*it));
+	}
+
 	AggregatePrimitive primitives(objects);
 	std::vector<Light*> lightList;
 	lightList.push_back(&point1);
-	//lightList.push_back(&point2);
-	
-
+	lightList.push_back(&point2);
 
 
 
@@ -548,7 +561,7 @@ int main(int argc, char *argv[]) {
 	Vector3f ambient(0.3, 0.3, 0.3);
 
 	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 100, 100, &primitives, &lightList, ambient, output);
+	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
 
 	myScene.render();
  	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
