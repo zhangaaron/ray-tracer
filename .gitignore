@@ -1,3 +1,5 @@
 raytracer
 *.o
 *.png
+.DS_Store
+raytracer.dSYM
