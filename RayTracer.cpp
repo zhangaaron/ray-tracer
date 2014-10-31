@@ -251,9 +251,9 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 	Vector3f local_pos(in.localGeo->pos[0], in.localGeo->pos[1], in.localGeo->pos[2]);
 	BRDF* constants = (hitObject)->get_material();
 	Vector3f rgb(0,0,0);
-	//rgb[0] += ambient[0] * constants->k_a[0];
-	//rgb[1] += ambient[1] * constants->k_a[1];
-	//rgb[2] += ambient[2] * constants->k_a[2];
+	rgb[0] += ambient[0] * constants->k_a[0];
+	rgb[1] += ambient[1] * constants->k_a[1];
+	rgb[2] += ambient[2] * constants->k_a[2];
 	for(std::vector<Light*>::iterator it = lightList->begin(); it != lightList->end(); ++it) {
 
 		Light* currentLight = (*it);
@@ -266,9 +266,9 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 
 
 			Vector3f lightColor = currentLight->getColor();
-			rgb[0] += lightColor[0] * constants->k_a[0];
-			rgb[1] += lightColor[1] * constants->k_a[1];
-			rgb[2] += lightColor[2] * constants->k_a[2];
+			//rgb[0] += lightColor[0] * constants->k_a[0];
+			//rgb[1] += lightColor[1] * constants->k_a[1];
+			//rgb[2] += lightColor[2] * constants->k_a[2];
 
 			//printf("Colored ambient in things with %f, %f, %f\n", rgb[0], rgb[1], rgb[2]);
 			//Diffuse term calculation
@@ -347,18 +347,106 @@ void Scene::render() {
 	myFilm.writeImage();
 };
 
-int main(int argc, char *argv[]) {
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
 
+
+std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    split(s, delim, elems);
+    return elems;
+}
+
+
+
+int main(int argc, char *argv[]) {
 	//Making camera
+	/*
 	Vector3f cam_coord(0, 0, 150);
 	Vector3f ll(-50, -50, 50);
 	Vector3f lr(50, -50, 50);
 	Vector3f ul(-50, 50, 50);
 	Vector3f ur(50, 50, 50);
 
-	Vector3f pos1(0, 50, 0);
-	Vector3f pos2(-50, -50, 0);
-	Vector3f pos3(50, -50, 0);
+	Vector3f k_a3(0, 0.1, 0.1);
+	Vector3f k_d3(0, 0.4, 0.4);
+	Vector3f k_s3(0, 0.8, 0.8);
+	Vector3f k_r3(0, 0, 0);
+	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 1000);
+
+	Vector3f pos5(-30, 0, -100);
+	Vector3f pos2(30, 0, -100);
+	//Sampe sphere
+	Sphere testSphere2(pos2, 10, &testSphereColor2);
+	Sphere testSphere1(pos5, 10, &testSphereColor2);
+
+	std::vector<Shape*> objects;
+	//objects.push_back(&testSphere1);
+	//objects.push_back(&testSphere2);
+	//objects.push_back(&testSphere3);
+	//objects.push_back(&testTriangle1);
+
+	Vector3f lightPos1(200, 200, 200);
+	Vector3f lightColor1(0.7, 0.7, 0.7);
+
+	Vector3f lightPos2(0, 0, -1);
+	Vector3f lightColor2(0.4, 0.4, 0.4);
+
+	PointLight point1(lightPos1, lightColor1);
+	DirectionalLight point2(lightPos2, lightColor2);
+	std::vector<Light*> lightList;
+	lightList.push_back(&point1);
+
+	Vector3f ambient(1, 1, 1);
+	//lightList.push_back(&point2);
+
+
+	string line;
+	ifstream myfile ("scene12.obj");
+
+	std::vector<std::string> x;
+	std::vector<Vector3f> vertexList;
+	printf("Starting obj file parsing\n");
+	if (myfile.is_open()){
+		while ( getline (myfile,line) ){
+			if(line[0] == 'v'){
+				x = split(line, ' ');
+				Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
+				vertexList.push_back(ver);
+			}
+			if(line[0] == 'f'){
+				x = split(line, ' ');
+				Triangle tri(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1 ], &testSphereColor2);
+				objects.push_back(&tri);
+			}
+		}
+		myfile.close();
+	}
+
+	printf("Ending obj file parsing %d\n", objects.size());
+
+	char *output = "./helloworld.png";
+	AggregatePrimitive primitives(objects);
+	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+
+	myScene.render();
+ 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
+	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
+	return 0;*/
+
+
+	//Making camera
+	Vector3f cam_coord(0, -0.1, 10);
+	Vector3f ll(-0.1, -0.1, 5);
+	Vector3f lr(0.1, -0.1, 5);
+	Vector3f ul(-0.1, 0.1, 5);
+	Vector3f ur(0.1, 0.1, 5);
 
 	//Sample material
 
@@ -380,23 +468,35 @@ int main(int argc, char *argv[]) {
 	BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 1000);
 	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 20);
 
-
-	Vector3f pos5(-30, 0, -100);
-	Vector3f pos6(30, 0, -50);
-	//Sampe sphere
 	//Sphere testSphere1(pos2, 25, &testSphereColor1);
+	Vector3f pos1(10, 80, -20);
+	Vector3f pos2(-50, -20, 0);
+	Vector3f pos3(50, -50, 20);
+
+	Vector3f post1(0, 50, 0);
+	Vector3f post2(-50, -50, 0);
+	Vector3f post3(50, -50, 0);
+
+	Vector3f postt1(0, 100, -10);
+	Vector3f postt2(-100, -100, -10);
+	Vector3f postt3(100, -100, -10);
+
 	Sphere testSphere1(pos1, 10, &testSphereColor2);
 	Sphere testSphere2(pos2, 10, &testSphereColor2);
 	Sphere testSphere3(pos3, 10, &testSphereColor2);
-	Triangle testTriangle1(pos1, pos2, pos3, &testSphereColor1);
 
+	Triangle testTriangle1(post1, post2, post3, &testSphereColor1);
+	Triangle testTriangle2(pos1, pos2, pos3, &testSphereColor2);
+	Triangle testTriangle3(postt1, postt2, postt3, &testSphereColor2);
 
 	//Add objects here
 	std::vector<Shape*> objects;
-	objects.push_back(&testSphere1);
-	objects.push_back(&testSphere2);
-	objects.push_back(&testSphere3);
-	objects.push_back(&testTriangle1);
+	//objects.push_back(&testSphere1);
+	//objects.push_back(&testSphere2);
+	//objects.push_back(&testSphere3);
+	//objects.push_back(&testTriangle1);
+	//objects.push_back(&testTriangle2);
+	//objects.push_back(&testTriangle3);
 
 	Vector3f lightPos1(200, 200, 200);
 	Vector3f lightColor1(0.7, 0.7, 0.7);
@@ -406,89 +506,53 @@ int main(int argc, char *argv[]) {
 
 
 	PointLight point1(lightPos1, lightColor1);
-	DirectionalLight point2(lightPos2, lightColor2);
+	//DirectionalLight point2(lightPos2, lightColor2);
 	//Add Lights here
+
+
+
+
+	string line;
+	ifstream myfile ("bunny.obj");
+	/*
+	std::vector<std::string> x;
+	std::vector<Vector3f> vertexList;
+	printf("Starting obj file parsing\n");
+	if (myfile.is_open()){
+		while ( getline (myfile,line) ){
+			if(line[0] == 'v'){
+				x = split(line, ' ');
+				Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
+				vertexList.push_back(ver);
+			}
+			if(line[0] == 'f'){
+				x = split(line, ' ');
+				Triangle tri(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1 ], &testSphereColor1);
+				objects.push_back(&tri);
+			}
+		}
+		myfile.close();
+	}
+	*/
 	AggregatePrimitive primitives(objects);
 	std::vector<Light*> lightList;
 	lightList.push_back(&point1);
-	lightList.push_back(&point2);
+	//lightList.push_back(&point2);
+	
+
+
+
+
+
 
 	Vector3f ambient(0.3, 0.3, 0.3);
 
 	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+	Scene myScene(cam_coord, ll, lr, ul, ur, 100, 100, &primitives, &lightList, ambient, output);
 
 	myScene.render();
  	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
 	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
 
 	return 0;
-	/*
-	//Making camera
-	Vector3f cam_coord(0, 0, 100);
-	Vector3f ll(-50, -50, 0);
-	Vector3f lr(50, -50, 0);
-	Vector3f ul(-50, 50, 0);
-	Vector3f ur(50, 50, 0);
-	Vector3f pos1(0, 0, -50);
-
-	Vector3f pos2(-30, 0, -50);
-	Vector3f pos3(30, 0, -50);
-	Vector3f pos4(0, 0, -200);
-
-	//Sample material
-	Vector3f k_a1(0.1, 0.1, 0);
-	Vector3f k_d1(1, 1, 0);
-	Vector3f k_s1(0.8, 0.8, 0.8);
-	Vector3f k_r1(0, 0, 0);
-
-	Vector3f k_a2(0.1, 0, 0);
-	Vector3f k_d2(1, 0, 0);
-	Vector3f k_s2(0.8, 0.8, 0.8);
-	Vector3f k_r2(0.5, 0.5, 0.5);
-
-	Vector3f k_a3(0, 0.3, 0.3);
-	Vector3f k_d3(0, 1, 1);
-	Vector3f k_s3(0.8, 0.8, 0.8);
-	Vector3f k_r3(0, 0, 0);
-	BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 10);
-	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 10);
-
-	Vector3f pos5(-30, 0, -100);
-	Vector3f pos6(30, 0, -50);
-	//Sampe sphere
-	//Sphere testSphere1(pos2, 25, &testSphereColor1);
-	Sphere testSphere2(pos5, 30, &testSphereColor1);
-	Sphere testSphere3(pos6, 30, &testSphereColor2);
-	//Add objects here
-	std::vector<Shape*> objects;
-	//objects.push_back(&testSphere1);
-	objects.push_back(&testSphere2);
-	objects.push_back(&testSphere3);
-
-	Vector3f lightPos1(200, 200, 200);
-	Vector3f lightColor1(0.3, 0.3, 0.3);
-
-	Vector3f lightPos2(0, 100, -150);
-	Vector3f lightColor2(0.5, 0.5, 0.5);
-
-
-	PointLight point1(lightPos1, lightColor1);
-	PointLight point2(lightPos2, lightColor2);
-	//Add Lights here
-	AggregatePrimitive primitives(objects);
-	std::vector<Light*> lightList;
-	lightList.push_back(&point1);
-	lightList.push_back(&point2);
-
-	Vector3f ambient(0.3, 0.3, 0.3);
-
-	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 2000, 2000, &primitives, &lightList, ambient, output);
-
-	myScene.render();
- 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
-	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
-
-	return 0;*/
 }

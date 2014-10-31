@@ -96,7 +96,7 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 	Vector3f A = v2-v1;
 	Vector3f B = v3-v1;
 	//printf(".");
-	Vector3f N = A.cross(B);
+	Vector3f N = (A.cross(B));
 
 	float n_dot_ray = N.dot(ray.dir);
 	//printf("Cross direction:\t%f\t%f\t%f\n", N[0], N[1], N[2]);
@@ -107,7 +107,8 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 		return false;
 	}
 	float d = N.dot(v1);
-	float t = -(N.dot(ray.pos) + d) / n_dot_ray;
+	float t = -1*((ray.pos - v1).dot(N) / n_dot_ray);
+	//float t = -(N.dot(ray.pos) + d) / n_dot_ray;
 	//printf("\nt:\t%f\n", n_dot_ray);
 	Vector3f point = t*ray.dir + ray.pos;
 
@@ -146,8 +147,7 @@ bool Triangle::intersectP(Ray& ray){
 		return false;
 	}
 	float d = N.dot(v1);
-	float t = -(N.dot(ray.pos) + d) / n_dot_ray;
-
+	float t = -1*((ray.pos - v1).dot(N) / n_dot_ray);
 	Vector3f point = t*ray.dir + ray.pos;
 	if(t < 0.00000000000001){
 		return false;
@@ -216,6 +216,7 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 };
 
 bool Sphere::intersectP(Ray& ray){
+
 	Vector3f e = ray.pos;
 	Vector3f d = ray.dir;
 
