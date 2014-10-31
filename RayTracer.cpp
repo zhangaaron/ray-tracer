@@ -349,7 +349,7 @@ void test_transformations() {
 	Vector3f ul(-50, 50, 50);
 	Vector3f ur(50, 50, 50);
 
-	Vector3f pos1(0, 0, 0);
+	Vector3f pos1(0, -50, 0);
 	Vector3f pos2(-50, -50, 0);
 	Vector3f pos3(50, -50, 0);
 
@@ -360,15 +360,26 @@ void test_transformations() {
 	Vector3f k_s1(0.8, 0.8, 0.8);
 	Vector3f k_r1(0, 0, 0);
 
+	Vector3f k_a2(0.1, 0.1, 0);
+	Vector3f k_d2(1, 0, 0);
+	Vector3f k_s2(0.9, 0.1, 0.1);
+	Vector3f k_r2(0, 0, 0);
+
 	BRDF testSphereColor1(k_a1, k_d1, k_s1, k_r1, 1000);
+	BRDF testSphereColor2(k_a2, k_d2, k_s2, k_r2, 1000);
 	Sphere testSphere1(pos1, 10, &testSphereColor1);
-	//Vector3f down(0, -50, 0);
-	Vector3f up(0, 50, 0);
-	//testSphere1.transformation.translate(down);
-	testSphere1.transformation.translate(up);
+	Sphere testSphere2(pos2, 10, &testSphereColor2);
+	Vector3f occlude(50, 50, 0);
+	Vector3f hello(0, 50, -50);
+	Vector3f rotate(-50, 50, 100);
+	testSphere1.transformation.rotate(rotate);
+	testSphere1.transformation.translate(hello);
+	testSphere1.transformation.rotate(-rotate);
+	//testSphere2.transformation.translate(occlude); //Red should occlude yellow
 
 	std::vector<Shape*> objects;
 	objects.push_back(&testSphere1);
+	objects.push_back(&testSphere2);
 
 
 	Vector3f lightPos1(200, 200, 200);
