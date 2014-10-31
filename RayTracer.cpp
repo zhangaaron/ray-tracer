@@ -39,7 +39,6 @@ class BRDF{
 	private:
 };
 
-
 BRDF::BRDF(Vector3f a, Vector3f d, Vector3f s, Vector3f r, float sp){
 	k_s = s;
 	k_a = a;
@@ -82,8 +81,33 @@ LocalGeo::LocalGeo(Vector3f position, Vector3f norm){
 	normal = norm;
 };
 
+class Transformation {
+	public:
+		Transform<float, 3, Affine, DontAlign> matrix_trans;
+		Transform<float, 3, Affine, DontAlign> matrix_inv_transp; //Inverse transpose of the transformation matrix, used for transforming the normal vectors. 
+		Transformation() { //Initializes a transformation that does nothing. 
+			matrix_trans = AngleAxisf(0, Vector3f::UnitX());
+			matrix_inv_transp = AngleAxisf(0, Vector3f::UnitX()); 
+		}
+		void translate(Vector3f xyz) {
+			matrix_trans = matrix_trans * Translation<float, 3>(xyz);
+			//matrix_inv_transp = matrix_trans.transpose().inverse() //Don't think order should matter here? 
+		}
+		void rotate(Vector3f xyz) {
+			matrix_trans = matrix_trans * ( AngleAxisf(xyz[0], Vector3f::UnitX()) * 
+										 AngleAxisf(xyz[1], Vector3f::UnitY()) *
+										  AngleAxisf(xyz[2], Vector3f::UnitZ()));
+		}
+		// void scale(Vector3f xyz) {
+
+		// }
+	private: 
+};
+
+
 class Shape{
 	public:
+		Transformation trans;
 		virtual bool intersect(Ray& ray, float* thit, LocalGeo* local) = 0;
 		virtual bool intersectP(Ray& ray) = 0;
 		virtual BRDF* get_material() = 0;
@@ -215,6 +239,15 @@ BRDF* Sphere::get_material(){
 	return material;
 };
 
+/* 	r(t) = e + d*t
+	define P to be point on surface of sphere, and p to be the center of the sphere. 
+	then: 
+
+	(P - p) dot (P - p) - r^2 = 0
+
+	set P = to r(t) and solve for t. This gives a quadratic equation with determinant. If t < 0, no real value of 
+	t gives intersection.  
+*/
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 	Vector3f e = ray.pos;
 	Vector3f d = ray.dir;
@@ -226,12 +259,14 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 		return false;
 	}
 	else{
-		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d));
-		local->pos = *thit * d + e;
-		local->normal = (local->pos - c)/radius;
+		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d)); //For what t value we get a hit. Always take negative value of det since its closer to viewer. 
+		local->pos = *thit * d + e; 
+		local->normal = (local->pos - c)/radius; 
 		return true;
 	}
 };
+
+
 
 bool Sphere::intersectP(Ray& ray){
 	Vector3f e = ray.pos;
@@ -345,8 +380,6 @@ void Sampler::next(int* XYCoords){
 	if (x == 0)	y++;
 };
 
-
-//Bit packed struct for color, RGB values 0-255
 
 class Film {
 
@@ -477,8 +510,9 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 		Light* currentLight = (*it);
 
 		LocalGeo geo_light_ray(local_pos, dummy);
+		//Create a light ray from light to point of intersection
 		currentLight->generateLightRay(&geo_light_ray, &lightRay);
-
+		//Test to see if light is blocked, and if not, color the object. 
 		if (!(objList->intersectP(lightRay, hitObject))){
 
 
