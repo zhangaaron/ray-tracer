@@ -142,7 +142,7 @@ Vector3f DirectionalLight::getColor(){
 
 void DirectionalLight::generateLightRay(LocalGeo* local, Ray* lray){
 	lray->pos = local->pos;
-	lray->dir = pos;
+	lray->dir = -1 * pos;
 };
 
 /*
@@ -158,31 +158,97 @@ AmbientLight::AmbientLight(Vector3f c){
 
 class Triangle : public Shape{
 	public:
-		Vector3f vertex1;
-		Vector3f vertex2;
-		Vector3f vertex3;
+		Vector3f v1;
+		Vector3f v2;
+		Vector3f v3;
 		BRDF* material;
-		Triangle(Vector3f v1, Vector3f v2, Vector3f v3, BRDF* m);
+		Triangle(Vector3f vertex1, Vector3f vertex2, Vector3f vertex3, BRDF* m);
 		bool intersect(Ray& ray, float* thit, LocalGeo* local);
 		bool intersectP(Ray& ray);
 		BRDF* get_material();
 	private:
 };
 
-Triangle::Triangle(Vector3f v1, Vector3f v2, Vector3f v3, BRDF* m){
-	vertex1 = v1;
-	vertex2 = v2;
-	vertex3 = v3;
+Triangle::Triangle(Vector3f vertex1, Vector3f vertex2, Vector3f vertex3, BRDF* m){
+	v1 = vertex1;
+	v2 = vertex2;
+	v3 = vertex3;
 	material = m;
 };
 
 bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
-	return false;
+	Vector3f A = v2-v1;
+	Vector3f B = v3-v1;
+	//printf(".");
+	Vector3f N = A.cross(B);
+
+	float n_dot_ray = N.dot(ray.dir);
+	//printf("Cross direction:\t%f\t%f\t%f\n", N[0], N[1], N[2]);
+	//printf("Ray direction:  \t%f\t%f\t%f\n\n", ray.dir[0], ray.dir[1], ray.dir[2]);
+	//Parallel Case
+	if(n_dot_ray == 0){
+		//printf("case 1 fail");
+		return false;
+	}
+	float d = N.dot(v1);
+	float t = -(N.dot(ray.pos) + d) / n_dot_ray;
+	//printf("\nt:\t%f\n", n_dot_ray);
+	Vector3f point = t*ray.dir + ray.pos;
+
+	if (N.dot(A.cross(point - v1)) < 0){
+		//printf("case 2 fail");
+		return false;
+	}
+
+	if (N.dot((v3-v2).cross(point - v2)) < 0){
+		//printf("case 3 fail");
+		return false;
+	}
+
+	if (N.dot((v1-v3).cross(point - v3)) < 0){
+		//printf("case 4 fail");
+		return false;
+	}
+
+	*thit = t;
+	local->pos = point;
+	local->normal = N;
+	//printf("Ray direction:  \t%f\t%f\t%f\n\n", N[0], N[1], N[2]);
+	//printf("\nhit\n");
+	return true;
 };
 
 
 bool Triangle::intersectP(Ray& ray){
-	return false;
+	Vector3f A = v2-v1;
+	Vector3f B = v3-v1;
+
+	Vector3f N = A.cross(B);
+	float n_dot_ray = N.dot(ray.dir);
+	//Parallel Case
+	if(n_dot_ray == 0){
+		return false;
+	}
+	float d = N.dot(v1);
+	float t = -(N.dot(ray.pos) + d) / n_dot_ray;
+
+	Vector3f point = t*ray.dir + ray.pos;
+	if(t < 0.00000000000001){
+		return false;
+	}
+	if (N.dot(A.cross(point - v1)) < 0){
+		return false;
+	}
+
+	if (N.dot((v3-v2).cross(point - v2)) < 0){
+		return false;
+	}
+
+	if (N.dot((v1-v3).cross(point - v3)) < 0){
+		return false;
+	}
+
+	return true;
 };
 
 BRDF* Triangle::get_material(){
@@ -240,7 +306,7 @@ bool Sphere::intersectP(Ray& ray){
 	Vector3f c = pos;
 
 	float determinant = ((d.dot(e-c)) * (d.dot(e-c))) - (d.dot(d))*((e-c).dot(e-c) - radius*radius);
-	if (determinant < 0){
+	if (determinant < 0 || ((-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d))) < -0.0001 ){
 		return false;
 	}else{
 		return true;
@@ -310,9 +376,9 @@ bool AggregatePrimitive::intersectP(Ray& ray, Shape* current){
 	for(std::vector<Shape*>::iterator it = list.begin(); it != list.end(); ++it) {
     	Shape* holder_shape = *it;
     	if (holder_shape != current){
-    		if (holder_shape->intersectP(ray)){
-    			return true;
-    		}
+			if (holder_shape->intersectP(ray)){
+				return true;
+			}
     	}
 	}
 	return false;
@@ -531,12 +597,7 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 		rgb[2] += constants->k_r[2] * tempColor[2];
 	}
 	setColor(color, rgb[0], rgb[1], rgb[2]);
-
-
-
 };
-
-
 
 class Scene {
 	public:
@@ -571,6 +632,82 @@ void Scene::render() {
 };
 
 int main(int argc, char *argv[]) {
+
+	//Making camera
+	Vector3f cam_coord(0, 0, 150);
+	Vector3f ll(-50, -50, 50);
+	Vector3f lr(50, -50, 50);
+	Vector3f ul(-50, 50, 50);
+	Vector3f ur(50, 50, 50);
+
+	Vector3f pos1(0, 50, 0);
+	Vector3f pos2(-50, -50, 0);
+	Vector3f pos3(50, -50, 0);
+
+	//Sample material
+
+	Vector3f k_a1(0.1, 0.1, 0);
+	Vector3f k_d1(1, 1, 0);
+	Vector3f k_s1(0.8, 0.8, 0.8);
+	Vector3f k_r1(0, 0, 0);
+
+	Vector3f k_a2(0, 0.1, 0.1);
+	Vector3f k_d2(0, 0.4, 0.4);
+	Vector3f k_s2(0, 0.8, 0.8);
+	Vector3f k_r2(0, 0, 0);
+
+	Vector3f k_a3(0.2, 0.2, 0.2);
+	Vector3f k_d3(0.3, 0.3, 0.3);
+	Vector3f k_s3(0.5, 0.5, 0.5);
+	Vector3f k_r3(0, 0, 0);
+
+	BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 1000);
+	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 20);
+
+
+	Vector3f pos5(-30, 0, -100);
+	Vector3f pos6(30, 0, -50);
+	//Sampe sphere
+	//Sphere testSphere1(pos2, 25, &testSphereColor1);
+	Sphere testSphere1(pos1, 10, &testSphereColor2);
+	Sphere testSphere2(pos2, 10, &testSphereColor2);
+	Sphere testSphere3(pos3, 10, &testSphereColor2);
+	Triangle testTriangle1(pos1, pos2, pos3, &testSphereColor1);
+
+
+	//Add objects here
+	std::vector<Shape*> objects;
+	objects.push_back(&testSphere1);
+	objects.push_back(&testSphere2);
+	objects.push_back(&testSphere3);
+	objects.push_back(&testTriangle1);
+
+	Vector3f lightPos1(200, 200, 200);
+	Vector3f lightColor1(0.7, 0.7, 0.7);
+
+	Vector3f lightPos2(0, 0, -1);
+	Vector3f lightColor2(0.4, 0.4, 0.4);
+
+
+	PointLight point1(lightPos1, lightColor1);
+	DirectionalLight point2(lightPos2, lightColor2);
+	//Add Lights here
+	AggregatePrimitive primitives(objects);
+	std::vector<Light*> lightList;
+	lightList.push_back(&point1);
+	lightList.push_back(&point2);
+
+	Vector3f ambient(0.3, 0.3, 0.3);
+
+	char *output = "./helloworld.png";
+	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+
+	myScene.render();
+ 	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
+	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
+
+	return 0;
+	/*
 	//Making camera
 	Vector3f cam_coord(0, 0, 100);
 	Vector3f ll(-50, -50, 0);
@@ -584,13 +721,11 @@ int main(int argc, char *argv[]) {
 	Vector3f pos4(0, 0, -200);
 
 	//Sample material
-	/*
 	Vector3f k_a1(0.1, 0.1, 0);
 	Vector3f k_d1(1, 1, 0);
 	Vector3f k_s1(0.8, 0.8, 0.8);
 	Vector3f k_r1(0, 0, 0);
-	BRDF testSphereColor1(k_a1, k_d1, k_s1, k_r1, 16);
-	*/
+
 	Vector3f k_a2(0.1, 0, 0);
 	Vector3f k_d2(1, 0, 0);
 	Vector3f k_s2(0.8, 0.8, 0.8);
@@ -633,11 +768,11 @@ int main(int argc, char *argv[]) {
 	Vector3f ambient(0.3, 0.3, 0.3);
 
 	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 800, 800, &primitives, &lightList, ambient, output);
+	Scene myScene(cam_coord, ll, lr, ul, ur, 2000, 2000, &primitives, &lightList, ambient, output);
 
 	myScene.render();
  	unsigned char RGBOutputArr[] = {(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0,(char)255, (char)0, (char)0};
 	lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
 
-	return 0;
+	return 0;*/
 }

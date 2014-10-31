@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -Wall -ansi -I ./eigen/
+CFLAGS = -g -Wall -ansi -I ./eigen/ -O3
 LDFLAGS = stuff
 
 RM = /bin/rm -f
