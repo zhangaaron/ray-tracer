@@ -297,8 +297,13 @@ void test_transformations_triangles() {
 	Triangle testTriangle1(a1,a2,a3, &testSphereColor1);
 	Triangle testTriangle2(b1, b2, b3, &testSphereColor1);
 	Triangle testTriangle3(c1, c2, c3, &testSphereColor1);
-	Vector3f up = Vector3f(0, 100, 0);
+	Vector3f up = Vector3f(0, 50, 0);
+	Vector3f around = Vector3f(60, 50, 0);
+	Vector3f scalingvector = Vector3f(3, 2, 1);
+	testTriangle1.transformation.scale(scalingvector);
+		testTriangle1.transformation.rotate(around);
 	testTriangle1.transformation.translate(up);
+
 	std::vector<Shape*> objects;
 
 	objects.push_back(&testTriangle1);
