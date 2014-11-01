@@ -50,13 +50,14 @@ void parseLoop(char *file_name) {
 	while (fscanf(line, 200, fp) != NULL) {
 
 		Transformation current_transform = Transformation();
+		BRDF *current_BRDF = new BRDF();
 		char *token;
 		token = strtok(line, " ");
 		if (strcmp(token, "cam")) {
 			scene_to_fill->parseCamera = parseCamera();
 		}
 		if (strcmp(token, "sph")) {
-			parseSphere();
+			Sphere *new_sphere = parseSphere();
 		}
 		if (strcmp(token, "tri")) {
 
@@ -78,19 +79,19 @@ void parseLoop(char *file_name) {
 		}
 
 		if (strcmp(token, "mat")) {
-
+			parseBRDF(line, BRDF *curr_b);
 		}
 
 		if (strcmp(token, "xft")) {
-
+			parseTransformation(line, &current_transform, TRANSLATION);
 		}
 		if (strcmp(token, "xfr")) {
-			
+			parseTransformation(line, &current_transform, ROTATION);
 		}
 		if (strcmp(token, "xfs")) {
-			
+			parseTransformation(line, &current_transform, SCALE);
 		}
-		if (strcmp(token, "xfs")) {
+		if (strcmp(token, "xfz")) { //Flush the transformation by setting to default. 
 			current_transform = Transformation();
 		}
 
@@ -105,15 +106,20 @@ void parseLoop(char *file_name) {
 
 }
 
+//For a space seperated line consisting of numbers, convert every input into integer and put into fill array. 
+void fill_param(int* fill, int size) {
+		for (int i = 0; i < size, i++) {
+			char *token = strtok(NULL, " ");
+			if (token == NULL) {
+				printf("Malformed string in object file, exiting. \n");
+			}
+			fill[i] = atoi(token);
+		}
+}
+
 Camera parseCamera(char *line) {
 	int param[15];
-	for (int i = 0; i < 15, i++) {
-		char *token = strtok(NULL, " ");
-		if (token == NULL) {
-			printf("Malformed camera string in object file, exiting. \n");
-		}
-		param[i] = atoi(token);
-	}
+	fill_param(param, 15);
 	Vector3f eye_coords = Vector3f(param[0], param[1], param[2]);
 	Vector3f LL_coords = Vector3f(param[3], param[4], param[5]);
 	Vector3f LR_coords = Vector3f(param[6], param[7], param[8]);
@@ -124,17 +130,28 @@ Camera parseCamera(char *line) {
 
 }
 
-Sphere parseSphere(char *line, Transformation *transformation) {
+Sphere *parseSphere(char *line, Transformation *transformation) {
 	int param[4];
-	for (int i = 0; i < 15, i++) {
-		char *token = strtok(NULL, " ");
-		if (token == NULL) {
-			printf("Malformed sphere string in object file, exiting. \n");
-		}
-		param[i] = atoi(token);
-	}
+	fill_param(param, 4);
 	Vector3f sphere_center_coords = Vector3f(param[0], param[1], param[2]);
 
-	return Sphere(sphere_center_coords, param[4], current_mat); //Parser doesn't know what output_x and y is so put -1 to remember to change later. 
+	return new Sphere(sphere_center_coords, param[4], current_mat); //Parser doesn't know what output_x and y is so put -1 to remember to change later. 
 
+}
+
+void parseTransformation(char *line, Transformation *trans, enum TRANSFORMATION t) {
+	int param[3];
+	fill_param(param, 3);
+	switch (t){
+		Vector3f transformation_vector = Vector3f(param[0], param[1], param[2]);
+		case ROTATION:
+			trans->rotate(transformation_vector);
+		case TRANSLATION:
+			trans->translate(transformation_vector);
+		case SCALE:
+			trans->scale(transformation_vector);
+		default:
+			printf("How did this even happen?\n");
+			exit(0);
+	}
 }

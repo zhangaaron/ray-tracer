@@ -469,8 +469,6 @@ int main(int argc, char *argv[]) {
 	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
 
 	myScene.render();
-	Transformation hello = Transformation();
-	hello.print();
 
 	return 0;
 }
