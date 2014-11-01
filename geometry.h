@@ -101,12 +101,15 @@ Triangle::Triangle(Vector3f vertex1, Vector3f vertex2, Vector3f vertex3, BRDF* m
 };
 
 bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
+
+	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
+	Vector3f  transformed_pos = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f transformed_dir = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
 	Vector3f A = v2-v1;
 	Vector3f B = v3-v1;
 	//printf(".");
 	Vector3f N = (A.cross(B));
-
-	float n_dot_ray = N.dot(ray.dir);
+	float n_dot_ray = N.dot(transformed_dir);
 	//printf("Cross direction:\t%f\t%f\t%f\n", N[0], N[1], N[2]);
 	//printf("Ray direction:  \t%f\t%f\t%f\n\n", ray.dir[0], ray.dir[1], ray.dir[2]);
 	//Parallel Case
@@ -115,10 +118,10 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 		return false;
 	}
 	float d = N.dot(v1);
-	float t = -1*((ray.pos - v1).dot(N) / n_dot_ray);
+	float t = -1*((transformed_pos - v1).dot(N) / n_dot_ray);
 	//float t = -(N.dot(ray.pos) + d) / n_dot_ray;
 	//printf("\nt:\t%f\n", n_dot_ray);
-	Vector3f point = t*ray.dir + ray.pos;
+	Vector3f point = t*transformed_dir + transformed_pos;
 
 	if (N.dot(A.cross(point - v1)) < 0){
 		//printf("case 2 fail");
@@ -137,7 +140,8 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 
 	*thit = t;
 	local->pos = point;
-	local->normal = N;
+	local->normal = (transformation.matrix_trans.linear().inverse().transpose()
+							* N).normalized(); //This is a normalized normal vector transformed back into the world space!
 	//printf("Ray direction:  \t%f\t%f\t%f\n\n", N[0], N[1], N[2]);
 	//printf("\nhit\n");
 	return true;
@@ -145,18 +149,23 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 
 
 bool Triangle::intersectP(Ray& ray){
+
+
+	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
+	Vector3f  transformed_pos = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f transformed_dir = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
 	Vector3f A = v2-v1;
 	Vector3f B = v3-v1;
 
 	Vector3f N = A.cross(B);
-	float n_dot_ray = N.dot(ray.dir);
+	float n_dot_ray = N.dot(transformed_dir);
 	//Parallel Case
 	if(n_dot_ray == 0){
 		return false;
 	}
 	float d = N.dot(v1);
-	float t = -1*((ray.pos - v1).dot(N) / n_dot_ray);
-	Vector3f point = t*ray.dir + ray.pos;
+	float t = -1*((transformed_pos - v1).dot(N) / n_dot_ray);
+	Vector3f point =  t*transformed_dir + transformed_pos;
 	if(t < 0.00000000000001){
 		return false;
 	}

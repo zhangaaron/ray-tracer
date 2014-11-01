@@ -264,13 +264,77 @@ std::vector<std::string> split(const std::string &s, char delim) {
 
 
 
-void test_transformations() {
+void test_transformations_triangles() {
+
+	Vector3f cam_coord(0, 0, 150);
+	Vector3f ll(-50, -50, 50);
+	Vector3f lr(50, -50, 50);
+	Vector3f ul(-50, 50, 50);
+	Vector3f ur(50, 50, 50);
+
+
+	//Sample material
+
+	Vector3f k_a1(0.1, 0, 0);
+	Vector3f k_d1(1, 0 , 0);
+	Vector3f k_s1(0.8, 1, 1);
+	Vector3f k_r1(0.6, 0, 0);
+	BRDF testSphereColor1(k_a1, k_d1, k_s1, k_r1, 10);
+
+	Vector3f a1(-10, -10, 0);
+	Vector3f a2(-50, -20, 0);
+	Vector3f a3(50, -50, 20);
+
+	Vector3f b1(0, 50, 0);
+	Vector3f b2(-50, -50, 0);
+	Vector3f b3(50, -50, 0);
+
+	Vector3f c1(0, 0, 78);
+	Vector3f c2(45, 45, 0);
+	Vector3f c3(45, -45, 0);
+
+
+	Triangle testTriangle1(a1,a2,a3, &testSphereColor1);
+	Triangle testTriangle2(b1, b2, b3, &testSphereColor1);
+	Triangle testTriangle3(c1, c2, c3, &testSphereColor1);
+	Vector3f up = Vector3f(0, 100, 0);
+	testTriangle1.transformation.translate(up);
+	std::vector<Shape*> objects;
+
+	objects.push_back(&testTriangle1);
+	// objects.push_back(&testTriangle2);
+	// objects.push_back(&testTriangle3);
+
+	AggregatePrimitive primitives(objects);
+
+
+
+	Vector3f lightPos1(50, 0, 100);
+	Vector3f lightColor1(1, 1, 1);
+
+	Vector3f lightPos2(0, 0, -1);
+	Vector3f lightColor2(0.4, 0.4, 0.4);
+
+
+	PointLight point1(lightPos1, lightColor1);
+	DirectionalLight point2(lightPos2, lightColor2);
+	std::vector<Light*> lightList;
+	Vector3f ambient(0.3, 0.3, 0.3);
+	lightList.push_back(&point1);
+	lightList.push_back(&point2);
+
+
+	char *output = "./helloworld.png";
+	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+
+	myScene.render();
+
 
 }
 
 int main(int argc, char *argv[]) {
 
-	test_transformations();
+	test_transformations_triangles();
 
 	// //Making camera
 	// Vector3f cam_coord(0, 0, 150);
@@ -346,129 +410,129 @@ int main(int argc, char *argv[]) {
 	// lodepng_encode24_file("./hello" ,RGBOutputArr, 2, 2);
 
 
-	//Making camera
-	Vector3f cam_coord(0, -0.1, 10);
-	Vector3f ll(-0.1, -0.1, 5);
-	Vector3f lr(0.1, -0.1, 5);
-	Vector3f ul(-0.1, 0.1, 5);
-	Vector3f ur(0.1, 0.1, 5);
+	// //Making camera
+	// Vector3f cam_coord(0, -0.1, 10);
+	// Vector3f ll(-0.1, -0.1, 5);
+	// Vector3f lr(0.1, -0.1, 5);
+	// Vector3f ul(-0.1, 0.1, 5);
+	// Vector3f ur(0.1, 0.1, 5);
 
-	/*
-	Vector3f cam_coord(0, 0, 150);
-	Vector3f ll(-50, -50, 100);
-	Vector3f lr(50, -50, 100);
-	Vector3f ul(-50, 50, 100);
-	Vector3f ur(50, 50, 100);
-	*/
-	//Sample material
+	// /*
+	// Vector3f cam_coord(0, 0, 150);
+	// Vector3f ll(-50, -50, 100);
+	// Vector3f lr(50, -50, 100);
+	// Vector3f ul(-50, 50, 100);
+	// Vector3f ur(50, 50, 100);
+	// */
+	// //Sample material
 
-	Vector3f k_a1(0.1, 0.1, 0);
-	Vector3f k_d1(1, 1, 0);
-	Vector3f k_s1(0.8, 0.8, 0.8);
-	Vector3f k_r1(0, 0, 0);
+	// Vector3f k_a1(0.1, 0.1, 0);
+	// Vector3f k_d1(1, 1, 0);
+	// Vector3f k_s1(0.8, 0.8, 0.8);
+	// Vector3f k_r1(0, 0, 0);
 
-	Vector3f k_a2(0, 0.3, 0.3);
-	Vector3f k_d2(0, 0.8, 0.8);
-	Vector3f k_s2(0, 0.8, 0.8);
-	Vector3f k_r2(0, 0, 0);
+	// Vector3f k_a2(0, 0.3, 0.3);
+	// Vector3f k_d2(0, 0.8, 0.8);
+	// Vector3f k_s2(0, 0.8, 0.8);
+	// Vector3f k_r2(0, 0, 0);
 
-	Vector3f k_a3(0.2, 0.2, 0.2);
-	Vector3f k_d3(0.3, 0.3, 0.3);
-	Vector3f k_s3(0.5, 0.5, 0.5);
-	Vector3f k_r3(0, 0, 0);
+	// Vector3f k_a3(0.2, 0.2, 0.2);
+	// Vector3f k_d3(0.3, 0.3, 0.3);
+	// Vector3f k_s3(0.5, 0.5, 0.5);
+	// Vector3f k_r3(0, 0, 0);
 
-	BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 1000);
-	BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 20);
+	// BRDF testSphereColor1(k_a2, k_d2, k_s2, k_r2, 1000);
+	// BRDF testSphereColor2(k_a3, k_d3, k_s3, k_r3, 20);
 
-	//Sphere testSphere1(pos2, 25, &testSphereColor1);
-	Vector3f pos1(10, 80, -20);
-	Vector3f pos2(-50, -20, 0);
-	Vector3f pos3(50, -50, 20);
+	// //Sphere testSphere1(pos2, 25, &testSphereColor1);
+	// Vector3f pos1(10, 80, -20);
+	// Vector3f pos2(-50, -20, 0);
+	// Vector3f pos3(50, -50, 20);
 
-	Vector3f post1(0, 50, 0);
-	Vector3f post2(-50, -50, 0);
-	Vector3f post3(50, -50, 0);
+	// Vector3f post1(0, 50, 0);
+	// Vector3f post2(-50, -50, 0);
+	// Vector3f post3(50, -50, 0);
 
-	Vector3f postt1(0, 0, 78);
-	Vector3f postt2(45, 45, 0);
-	Vector3f postt3(45, -45, 0);
+	// Vector3f postt1(0, 0, 78);
+	// Vector3f postt2(45, 45, 0);
+	// Vector3f postt3(45, -45, 0);
 
-	Sphere testSphere1(pos1, 10, &testSphereColor2);
-	Sphere testSphere2(pos2, 10, &testSphereColor2);
-	Sphere testSphere3(pos3, 10, &testSphereColor2);
+	// Sphere testSphere1(pos1, 10, &testSphereColor2);
+	// Sphere testSphere2(pos2, 10, &testSphereColor2);
+	// Sphere testSphere3(pos3, 10, &testSphereColor2);
 
-	Triangle testTriangle1(post1, post2, post3, &testSphereColor1);
-	Triangle testTriangle2(pos1, pos2, pos3, &testSphereColor2);
-	Triangle testTriangle3(postt1, postt2, postt3, &testSphereColor2);
+	// Triangle testTriangle1(post1, post2, post3, &testSphereColor1);
+	// Triangle testTriangle2(pos1, pos2, pos3, &testSphereColor2);
+	// Triangle testTriangle3(postt1, postt2, postt3, &testSphereColor2);
 
-	//Add objects here
-	std::vector<Shape*> objects;
-	//objects.push_back(&testSphere1);
-	//objects.push_back(&testSphere2);
-	//objects.push_back(&testSphere3);
-	//objects.push_back(&testTriangle1);
-	//objects.push_back(&testTriangle2);
-	//objects.push_back(&testTriangle3);
+	// //Add objects here
+	// std::vector<Shape*> objects;
+	// //objects.push_back(&testSphere1);
+	// //objects.push_back(&testSphere2);
+	// //objects.push_back(&testSphere3);
+	// //objects.push_back(&testTriangle1);
+	// //objects.push_back(&testTriangle2);
+	// //objects.push_back(&testTriangle3);
 
-	Vector3f lightPos1(50, 0, 100);
-	Vector3f lightColor1(1, 1, 1);
+	// Vector3f lightPos1(50, 0, 100);
+	// Vector3f lightColor1(1, 1, 1);
 
-	Vector3f lightPos2(0, 0, -1);
-	Vector3f lightColor2(0.4, 0.4, 0.4);
-
-
-	PointLight point1(lightPos1, lightColor1);
-	DirectionalLight point2(lightPos2, lightColor2);
-	//Add Lights here
+	// Vector3f lightPos2(0, 0, -1);
+	// Vector3f lightColor2(0.4, 0.4, 0.4);
 
 
-
-
-	string line;
-	ifstream myfile ("bunny.obj");
-
-	std::vector<std::string> x;
-	std::vector<Vector3f> vertexList;
-	printf("Starting obj file parsing\n");
-	std::vector<Triangle> objFile;
-	if (myfile.is_open()){
-		while ( getline (myfile,line) ){
-			if(line[0] == 'v'){
-				x = split(line, ' ');
-				Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
-				vertexList.push_back(ver);
-				print_3f(ver);
-			}
-			if(line[0] == 'f'){
-				x = split(line, ' ');
-				Vector3f temp(-3, -3, 5);
-				postt1 = postt1 + temp;
-				Triangle tri = Triangle(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1], &testSphereColor1);
-				objFile.push_back(tri);
-			}
-		}
-		myfile.close();
-	}
-
-	for(std::vector<Triangle>::iterator it = objFile.begin(); it != objFile.end(); ++it) {
-    	objects.push_back(&(*it));
-	}
-
-	AggregatePrimitive primitives(objects);
-	std::vector<Light*> lightList;
-	lightList.push_back(&point1);
-	lightList.push_back(&point2);
+	// PointLight point1(lightPos1, lightColor1);
+	// DirectionalLight point2(lightPos2, lightColor2);
+	// //Add Lights here
 
 
 
 
+	// string line;
+	// ifstream myfile ("bunny.obj");
 
-	Vector3f ambient(0.3, 0.3, 0.3);
+	// std::vector<std::string> x;
+	// std::vector<Vector3f> vertexList;
+	// printf("Starting obj file parsing\n");
+	// std::vector<Triangle> objFile;
+	// if (myfile.is_open()){
+	// 	while ( getline (myfile,line) ){
+	// 		if(line[0] == 'v'){
+	// 			x = split(line, ' ');
+	// 			Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
+	// 			vertexList.push_back(ver);
+	// 			print_3f(ver);
+	// 		}
+	// 		if(line[0] == 'f'){
+	// 			x = split(line, ' ');
+	// 			Vector3f temp(-3, -3, 5);
+	// 			postt1 = postt1 + temp;
+	// 			Triangle tri = Triangle(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1], &testSphereColor1);
+	// 			objFile.push_back(tri);
+	// 		}
+	// 	}
+	// 	myfile.close();
+	// }
 
-	char *output = "./helloworld.png";
-	Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+	// for(std::vector<Triangle>::iterator it = objFile.begin(); it != objFile.end(); ++it) {
+ //    	objects.push_back(&(*it));
+	// }
 
-	myScene.render();
+	// AggregatePrimitive primitives(objects);
+	// std::vector<Light*> lightList;
+	// lightList.push_back(&point1);
+	// lightList.push_back(&point2);
+
+
+
+
+
+	// Vector3f ambient(0.3, 0.3, 0.3);
+
+	// char *output = "./helloworld.png";
+	// Scene myScene(cam_coord, ll, lr, ul, ur, 1000, 1000, &primitives, &lightList, ambient, output);
+
+	// myScene.render();
 
 	return 0;
 }
