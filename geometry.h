@@ -10,6 +10,7 @@
 #include "transformation.h"
 
 
+
 void normalize(Vector3f* v){
 	float len = sqrt(((*v)[0] * (*v)[0]) + ((*v)[1] * (*v)[1]) + ((*v)[2] * (*v)[2]));
 	(*v)[0] = (*v)[0] / len;
@@ -26,10 +27,14 @@ class BRDF{
 		Vector3f k_d;
 		float k_sp;
 		BRDF(Vector3f a, Vector3f d, Vector3f s, Vector3f r, float sp);
+		BRDF();
 		void print();
 	private:
 };
 
+BRDF::BRDF() {
+
+};
 BRDF::BRDF(Vector3f a, Vector3f d, Vector3f s, Vector3f r, float sp){
 	k_s = s;
 	k_a = a;
@@ -117,7 +122,6 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 		//printf("case 1 fail");
 		return false;
 	}
-	float d = N.dot(v1);
 	float t = -1*((transformed_pos - v1).dot(N) / n_dot_ray);
 	//float t = -(N.dot(ray.pos) + d) / n_dot_ray;
 	//printf("\nt:\t%f\n", n_dot_ray);
@@ -163,7 +167,6 @@ bool Triangle::intersectP(Ray& ray){
 	if(n_dot_ray == 0){
 		return false;
 	}
-	float d = N.dot(v1);
 	float t = -1*((transformed_pos - v1).dot(N) / n_dot_ray);
 	Vector3f point = t*transformed_dir + transformed_pos;
 	if(t < 0.00000000000001){
@@ -253,3 +256,24 @@ bool Sphere::intersectP(Ray& ray){
 		return true;
 	}
 };
+
+
+
+class Intersection{
+	public:
+		LocalGeo* localGeo;
+		Shape* shape;
+		Intersection(LocalGeo* l, Shape* s);
+	private:
+};
+
+
+class AggregatePrimitive{
+	public:
+		vector<Shape*> list;
+		AggregatePrimitive();
+		AggregatePrimitive(vector<Shape*> l);
+		bool intersect(Ray& ray, float* thit, Intersection* in, Shape* current);
+		bool intersectP(Ray& ray, Shape* current);
+	private:
+}; 

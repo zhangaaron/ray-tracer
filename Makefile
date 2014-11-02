@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -Wall -ansi -I ./eigen/ -O3
+CFLAGS = -g -Wall -ansi -I ./eigen/ -O1
 LDFLAGS = stuff
 
 all: main

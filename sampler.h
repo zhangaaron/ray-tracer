@@ -12,6 +12,7 @@ class Sampler {
 	public:
 		int x_max, y_max;
 		int x, y;
+		Sampler() {}
 		Sampler(int x_max, int y_max){
 			this->x_max = x_max;
 			this->y_max= y_max;

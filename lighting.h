@@ -13,9 +13,9 @@
 #include "geometry.h"
 #include "camera.h"
 
+
 using namespace std;
 using namespace Eigen;
-
 class Light{
 	public:
 		virtual void generateLightRay(LocalGeo* local, Ray* lray) = 0;
@@ -23,19 +23,23 @@ class Light{
 	private:
 };
 
+
+
 class PointLight : public Light{
 	public:
 		Vector3f pos;
 		Vector3f lightColor;
-		PointLight(Vector3f pos, Vector3f lightColor);
+		float fall_off;
+		PointLight(Vector3f pos, Vector3f lightColor, float fall_off);
 		void generateLightRay(LocalGeo* local, Ray* lray);
 		Vector3f getColor();
 };
 
 
-PointLight::PointLight(Vector3f position, Vector3f c){
+PointLight::PointLight(Vector3f position, Vector3f c, float fall_off){
 	pos = position;
 	lightColor = c;
+	this->fall_off = fall_off;
 };
 
 void PointLight::generateLightRay(LocalGeo* local, Ray* lray){

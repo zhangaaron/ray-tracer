@@ -26,6 +26,9 @@ class Film {
 		int width, height;
 		char *fileName;
 		unsigned char *RGBOutputArr;
+		Film() {
+			
+		}
 		Film(int output_x, int output_y, char *fileName);
 		void commit(int *XYCoords, Vector3f color);
 		void writeImage();

@@ -7,8 +7,13 @@
 #include <Eigen/Dense>
 #include <time.h>
 #include <math.h>
+#include "lodepng.h"
+#include "sampler.h"
 #include "transformation.h"
-
+#include "geometry.h"
+#include "camera.h"
+#include "lighting.h"
+#include "film.h"
 
 class Camera {
 	public:
@@ -19,10 +24,13 @@ class Camera {
 		Vector3f ur;
 		int output_x;
 		int output_y;
-
+		Camera();
 		Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft, Vector3f uright, int x, int y);
 		void generateRay(int *XYCoords, Ray* ray);
 	private:
+};
+Camera::Camera() {
+
 };
 
 Camera::Camera(Vector3f coord, Vector3f lleft, Vector3f lright, Vector3f ulleft, Vector3f uright, int x, int y){
