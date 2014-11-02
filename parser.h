@@ -69,7 +69,7 @@ Camera parse_camera(int *param) {
 	Vector3f LR_coords = Vector3f(param[6], param[7], param[8]);
 	Vector3f UL_coords = Vector3f(param[9], param[10], param[11]);
 	Vector3f UR_coords = Vector3f(param[12], param[13], param[14]);
-	return Camera(eye_coords, LL_coords, LR_coords, UL_coords, UR_coords, -1, -1); //Parser doesn't know what output_x and y is so put -1 to remember to change later. 
+	return Camera(eye_coords, LL_coords, LR_coords, UL_coords, UR_coords, 1000, 1000); //Parser doesn't know what output_x and y is so put -1 to remember to change later. 
 
 
 }
