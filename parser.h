@@ -206,12 +206,6 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 			current_transform = Transformation();
 		}
 
-		// else {
-		// 	printf("Unrecognized item: %s in bagging area! Please wait for assistance from technician!\n", token);
-		// 	exit(0);
-		// }
-
-
 
 	}
 	parser_fill->obj_list = AggregatePrimitive(*objects);

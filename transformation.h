@@ -14,33 +14,32 @@ using namespace Eigen;
 
 class Transformation {
 	public:
-		Transform<float, 3, Affine, DontAlign> matrix_trans;
-		Transform<float, 3, Affine, DontAlign> matrix_inv_transp; //Inverse transpose of the transformation matrix, used for transforming the normal vectors. 
+		Transform<float, 3, Affine, DontAlign> matrix_transformation_point;
+		Transform<float, 3, Affine, DontAlign> matrix_transformation_ray; //Inverse transpose of the transformation matrix, used for transforming the normal vectors. 
 		Transformation() { //Initializes a transformation that does nothing. 
-			matrix_trans = AngleAxisf(0, Vector3f::UnitX());
-			matrix_inv_transp = AngleAxisf(0, Vector3f::UnitX()); 
-		}
-		void set_inverse_transpose() {
-			matrix_inv_transp = matrix_trans.inverse().matrix().transpose();
+			matrix_transformation_point = AngleAxisf(0, Vector3f::UnitX());
+			matrix_transformation_ray = AngleAxisf(0, Vector3f::UnitX()); 
 		}
 		void translate(Vector3f xyz) {
-			matrix_trans = matrix_trans * Translation<float, 3>(xyz);
-			set_inverse_transpose();
+			matrix_transformation_point = matrix_transformation_point * Translation<float, 3>(xyz);
 		}
 		void rotate(Vector3f xyz) {
-			matrix_trans = matrix_trans * ( AngleAxisf(xyz[0], Vector3f::UnitX()) * 
+			matrix_transformation_ray = matrix_transformation_ray * ( AngleAxisf(xyz[0], Vector3f::UnitX()) * 
 										 AngleAxisf(xyz[1], Vector3f::UnitY()) *
 										  AngleAxisf(xyz[2], Vector3f::UnitZ()));
-			set_inverse_transpose();
+			matrix_transformation_point = matrix_transformation_point * ( AngleAxisf(xyz[0], Vector3f::UnitX()) * 
+							 AngleAxisf(xyz[1], Vector3f::UnitY()) *
+							  AngleAxisf(xyz[2], Vector3f::UnitZ()));
+
 		}
 		 void scale(Vector3f xyz) {
-		 	matrix_trans = matrix_trans * Scaling(xyz);
-		 	set_inverse_transpose();
+			 	matrix_transformation_point = matrix_transformation_point * Scaling(xyz);
+			 	matrix_transformation_ray = matrix_transformation_ray * Scaling(xyz);
 		 }
 
 		void print() {
-			cout << "Rotation matrix: \n" << matrix_trans.rotation() << "\n";
-			cout << "Translation: \n " << matrix_trans.translation() << "\n"; 
+			cout << "Rotation matrix: \n" << matrix_transformation_point.rotation() << "\n";
+			cout << "Translation: \n " << matrix_transformation_point.translation() << "\n"; 
 		}
 		
 

@@ -108,8 +108,8 @@ Triangle::Triangle(Vector3f vertex1, Vector3f vertex2, Vector3f vertex3, BRDF* m
 bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 
 	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
-	Vector3f  transformed_pos = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
-	Vector3f transformed_dir = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
+	Vector3f  transformed_pos = transformation.matrix_transformation_ray.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f transformed_dir = transformation.matrix_transformation_point.inverse() * ray.dir; //Gotta figure out inconsistent documentation here!
 	Vector3f A = v2-v1;
 	Vector3f B = v3-v1;
 	//printf(".");
@@ -125,7 +125,7 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 	float t = -1*((transformed_pos - v1).dot(N) / n_dot_ray);
 	//float t = -(N.dot(ray.pos) + d) / n_dot_ray;
 	//printf("\nt:\t%f\n", n_dot_ray);
-	Vector3f point = t*transformed_dir + transformed_pos;
+	Vector3f point = t*ray.dir + ray.pos;
 
 	if (N.dot(A.cross(point - v1)) < 0){
 		//printf("case 2 fail");
@@ -144,7 +144,7 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 
 	*thit = t;
 	local->pos = point;
-	local->normal = (transformation.matrix_trans.linear().inverse().transpose()
+	local->normal = (transformation.matrix_transformation_point.linear().inverse().transpose()
 							* N).normalized(); //This is a normalized normal vector transformed back into the world space!
 	//printf("Ray direction:  \t%f\t%f\t%f\n\n", N[0], N[1], N[2]);
 	//printf("\nhit\n");
@@ -156,8 +156,8 @@ bool Triangle::intersectP(Ray& ray){
 
 
 	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
-	Vector3f  transformed_pos = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
-	Vector3f transformed_dir = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
+	Vector3f  transformed_pos = transformation.matrix_transformation_ray.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f transformed_dir = transformation.matrix_transformation_point.inverse() * ray.dir; //Gotta figure out inconsistent documentation here!
 	Vector3f A = v2-v1;
 	Vector3f B = v3-v1;
 
@@ -211,8 +211,7 @@ Sphere::Sphere(Vector3f position, float r, BRDF* m){
 	radius = r;
 	pos = position;
 	material = m;
-	// transformation.translate(position);
-	// transformation.scale()
+
 };
 
 BRDF* Sphere::get_material(){
@@ -222,8 +221,8 @@ BRDF* Sphere::get_material(){
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 
 	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
-	Vector3f e = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
-	Vector3f d = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
+	Vector3f e = transformation.matrix_transformation_point.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f d = transformation.matrix_transformation_ray.inverse() * ray.dir; //Gotta figure out inconsistent documentation here!
 
 	Vector3f c = pos;
 
@@ -233,8 +232,8 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 	}
 	else{
 		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d)); //For what t value we get a hit. Always take negative value of det since its closer to viewer. 
-		local->pos = *thit * d + e;
-		local->normal = (transformation.matrix_trans.linear().inverse().transpose()
+		local->pos =   ray.pos + *thit* ray.dir ;
+		local->normal = (transformation.matrix_transformation_point.linear().inverse().transpose()
 							* (local->pos - c)).normalized(); //This is a normalized vector transformed back into the world space!
 
 
@@ -244,8 +243,8 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 };
 
 bool Sphere::intersectP(Ray& ray){
-	Vector3f e = transformation.matrix_trans.inverse() * ray.pos; //Don't scale the position of the ray!
-	Vector3f d = transformation.matrix_trans.inverse().linear() * ray.dir; //Gotta figure out inconsistent documentation here!
+	Vector3f e = transformation.matrix_transformation_point.inverse() * ray.pos; //Don't scale the position of the ray!
+	Vector3f d = transformation.matrix_transformation_ray.inverse() * ray.dir; //Gotta figure out inconsistent documentation here!
 
 	Vector3f c = pos;
 
