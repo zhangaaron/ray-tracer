@@ -341,8 +341,8 @@ void test_transformations_triangles() {
 }
 
 int main(int argc, char *argv[]) {
-
-	//test_transformations_triangles();
+	Scene myScene((char *)argv[1]);
+	myScene.render();
 
 	return 0;
 }

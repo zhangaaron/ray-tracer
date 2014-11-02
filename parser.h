@@ -38,30 +38,32 @@ struct parser_struct {
 };
 
 //For a space seperated line consisting of numbers, convert every input into integer and put into fill array. 
-void fill_param(int* fill, int size) {
-		for (int i = 0; i < size; i++) {
-			char *token = strtok(NULL, " ");
-			if (token == NULL) {
-				printf("Malformed string in scene file, exiting. \n");
+char * tokenize_line(char *line, int *int_array, float *float_array) {
+		char *token = strtok(line, " "); 
+		for (int i = 0; i < 15; i++) {
+			char *value = strtok(NULL, " ");
+			if (value == NULL) {
+				break;
 			}
-			fill[i] = atoi(token);
+			int_array[i] = atoi(value);
+			float_array[i] = atof(value);
 		}
+		printf("Token is inside tokenize line %s\n", token);
+		return token;
 }
 
 //For a space seperated line consisting of numbers, convert every input into float and put into fill array. 
-void fill_param_float(float* fill, int size) {
+void fill_param_float(float* fill, int size, char* line) {
 		for (int i = 0; i < size; i++) {
 			char *token = strtok(NULL, " ");
 			if (token == NULL) {
-				printf("Malformed string in scene file, exiting. \n");
+				printf("Malformed string in line: %s, exiting. \n", line);
 			}
 			fill[i] = atof(token);
 		}
 }
 
-Camera parse_camera(char *line) {
-	int param[15];
-	fill_param(param, 15);
+Camera parse_camera(int *param) {
 	Vector3f eye_coords = Vector3f(param[0], param[1], param[2]);
 	Vector3f LL_coords = Vector3f(param[3], param[4], param[5]);
 	Vector3f LR_coords = Vector3f(param[6], param[7], param[8]);
@@ -71,48 +73,39 @@ Camera parse_camera(char *line) {
 
 
 }
-Light *parse_point_light(char *line) {
-	float param[7];
-	fill_param_float(param, 7);
+Light *parse_point_light(float *param) {
+
 	Vector3f xyz = Vector3f(param[0], param[1], param[2]);
 	Vector3f RGB = Vector3f(param[3], param[4], param[5]);
 	float fall_off = param[6];
 	return new PointLight(xyz, RGB, fall_off);
 	
 }
-Light *parse_directional_light(char *line) {
-	float param[6];
-	fill_param_float(param, 6);
+Light *parse_directional_light(float *param) {
+
 	Vector3f xyz = Vector3f(param[0], param[1], param[2]);
 	Vector3f RGB = Vector3f(param[3], param[4], param[5]);
 	return new DirectionalLight(xyz, RGB);
 }
-Vector3f parse_ambient_light(char *line) {
-	float param[6];
-	fill_param_float(param, 3);
+Vector3f parse_ambient_light(float *param) {
+
 	return Vector3f(param[0], param[1], param[2]);
 }
-Sphere *parse_sphere(char *line, BRDF *current_mat) {
-	int param[4];
-	fill_param(param, 4);
+Sphere *parse_sphere(int *param, BRDF *current_mat) {
 	Vector3f sphere_center_coords = Vector3f(param[0], param[1], param[2]);
 
-	return new Sphere(sphere_center_coords, param[4], current_mat);
+	return new Sphere(sphere_center_coords, param[3], current_mat);
 
 }
 
-Triangle *parseTriangle(char *line, BRDF *current_mat) {
-	int param[9];
-	fill_param(param, 9);
+Triangle *parseTriangle(int *param, BRDF *current_mat) {
 	Vector3f vert_1 = Vector3f(param[0], param[1], param[2]);
 	Vector3f vert_2 = Vector3f(param[3], param[4], param[5]);
 	Vector3f vert_3 = Vector3f(param[6], param[7], param[8]);
 	return new Triangle(vert_1, vert_2, vert_3, current_mat);
 }
 
-void parseTransformation(char *line, Transformation *trans, enum TRANSFORMATION t) {
-	int param[3];
-	fill_param(param, 3);
+void parseTransformation(int *param, Transformation *trans, enum TRANSFORMATION t) {
 	Vector3f t_vector = Vector3f(param[0], param[1], param[2]);
 	switch (t){
 
@@ -123,14 +116,12 @@ void parseTransformation(char *line, Transformation *trans, enum TRANSFORMATION 
 		case SCALE:
 			trans->scale(t_vector);
 		default:
-			printf("How did this even happen?\n");
+			printf("How did this even happen? %d \n", t);
 			exit(0);
 	}
 }
 
-void parseBRDF(char *line, BRDF *curr_b) {
-	float param[13];
-	fill_param_float(param, 13);
+void parseBRDF(float *param, BRDF *curr_b) {
 	Vector3f ambientRGB = Vector3f(param[0], param[1], param[2]);
 	Vector3f diffuseRGB = Vector3f(param[3], param[4], param[5]);
 	Vector3f specularRGB = Vector3f(param[6], param[7], param[8]);
@@ -165,60 +156,61 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 	BRDF *current_BRDF = new BRDF();
 	char line[200];
 	while (fgets(line, 200, fp) != NULL) { //Get next line with limit of 200 character lines until we hit the EOF. 
-
-
-		char *token;
-		token = strtok(line, " ");
-		if (strcmp(token, "cam")) {
-			parser_fill->camera = parse_camera(line);
+		char *token = "A";
+		int integer_tokens[15];
+		float float_tokens[15];
+		token = tokenize_line(line, integer_tokens, float_tokens);
+		printf("Token is inside main: %s\n", token);
+		if (!strcmp(token, "cam")) {
+			parser_fill->camera = parse_camera(integer_tokens);
 		}
-		if (strcmp(token, "sph")) {
-			Sphere *new_sphere = parse_sphere(line, current_BRDF);
+		if (!strcmp(token, "sph")) {
+			Sphere *new_sphere = parse_sphere(integer_tokens, current_BRDF);
 			new_sphere->transformation = current_transform;
 			objects->push_back(new_sphere);
 		}
-		if (strcmp(token, "tri")) {
-			Triangle *new_triangle = parseTriangle(line, current_BRDF);
+		if (!strcmp(token, "tri")) {
+			Triangle *new_triangle = parseTriangle(integer_tokens, current_BRDF);
 			new_triangle->transformation = current_transform;
 			objects->push_back(new_triangle);
 		}
-		if(strcmp(token, "obj")) {
+		if(!strcmp(token, "obj")) {
 			//Handle this somehow
 		}
 
-		if(strcmp(token, "ltp")) {
-			light_list->push_back(parse_point_light(line));
+		if(!strcmp(token, "ltp")) {
+			light_list->push_back(parse_point_light(float_tokens));
 		}
 
-		if (strcmp(token, "ltd")) {
-			light_list->push_back(parse_directional_light(line));
+		if (!strcmp(token, "ltd")) {
+			light_list->push_back(parse_directional_light(float_tokens));
 		}
 
-		if (strcmp(token, "lta")) {
-			parser_fill->ambient_light = parse_ambient_light(line);
+		if (!strcmp(token, "lta")) {
+			parser_fill->ambient_light = parse_ambient_light(float_tokens);
 		}
 
-		if (strcmp(token, "mat")) {
-			parseBRDF(line, current_BRDF);
+		if (!strcmp(token, "mat")) {
+			parseBRDF(float_tokens, current_BRDF);
 		}
 
-		if (strcmp(token, "xft")) {
-			parseTransformation(line, &current_transform, TRANSLATION);
+		if (!strcmp(token, "xft")) {
+			parseTransformation(integer_tokens, &current_transform, TRANSLATION);
 		}
-		if (strcmp(token, "xfr")) {
-			parseTransformation(line, &current_transform, ROTATION);
+		if (!strcmp(token, "xfr")) {
+			parseTransformation(integer_tokens, &current_transform, ROTATION);
 		}
-		if (strcmp(token, "xfs")) {
-			parseTransformation(line, &current_transform, SCALE);
+		if (!strcmp(token, "xfs")) {
+			parseTransformation(integer_tokens, &current_transform, SCALE);
 		}
-		if (strcmp(token, "xfz")) { //Flush the transformation by setting to default. 
+		if (!strcmp(token, "xfz")) { //Flush the transformation by setting to default. 
 			current_transform = Transformation();
 		}
 
-		else {
-			printf("Unrecognized item: %s in bagging area! Please wait for assistance from technician!\n", token);
-			exit(0);
-		}
+		// else {
+		// 	printf("Unrecognized item: %s in bagging area! Please wait for assistance from technician!\n", token);
+		// 	exit(0);
+		// }
 
 
 
