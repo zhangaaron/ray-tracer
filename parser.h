@@ -22,12 +22,10 @@ using namespace lodepng;
 
  This file can be used to parse input files given to our ray tracer and return an a struct containing all the information to set up a scene. 
  */
+#define TRANSLATION 0
+#define ROTATION 1
+#define SCALE 2
 
-enum TRANSFORMATION {
-	TRANSLATION,
-	ROTATION, 
-	SCALE
-};
 //This gets filled out by the parse_loop
 struct parser_struct {
 	Camera camera;
@@ -48,7 +46,6 @@ char * tokenize_line(char *line, int *int_array, float *float_array) {
 			int_array[i] = atoi(value);
 			float_array[i] = atof(value);
 		}
-		printf("Token is inside tokenize line %s\n", token);
 		return token;
 }
 
@@ -105,16 +102,19 @@ Triangle *parseTriangle(int *param, BRDF *current_mat) {
 	return new Triangle(vert_1, vert_2, vert_3, current_mat);
 }
 
-void parseTransformation(int *param, Transformation *trans, enum TRANSFORMATION t) {
+void parseTransformation(int *param, Transformation *trans, int t) {
 	Vector3f t_vector = Vector3f(param[0], param[1], param[2]);
 	switch (t){
 
 		case ROTATION:
 			trans->rotate(t_vector);
+			break;
 		case TRANSLATION:
 			trans->translate(t_vector);
+			break;
 		case SCALE:
 			trans->scale(t_vector);
+			break;
 		default:
 			printf("How did this even happen? %d \n", t);
 			exit(0);
@@ -160,7 +160,6 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 		int integer_tokens[15];
 		float float_tokens[15];
 		token = tokenize_line(line, integer_tokens, float_tokens);
-		printf("Token is inside main: %s\n", token);
 		if (!strcmp(token, "cam")) {
 			parser_fill->camera = parse_camera(integer_tokens);
 		}
