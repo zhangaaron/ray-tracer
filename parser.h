@@ -171,11 +171,17 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 			Sphere *new_sphere = parse_sphere(integer_tokens, current_BRDF);
 			new_sphere->transformation = current_transform;
 			objects->push_back(new_sphere);
+			BRDF *temp_BRDF = current_BRDF;
+			current_BRDF = new BRDF();
+			*current_BRDF = *temp_BRDF;
 		}
 		if (!strcmp(token, "tri")) {
 			Triangle *new_triangle = parseTriangle(integer_tokens, current_BRDF);
 			new_triangle->transformation = current_transform;
 			objects->push_back(new_triangle);
+			BRDF *temp_BRDF = current_BRDF;
+			current_BRDF = new BRDF();
+			*current_BRDF = *temp_BRDF;
 		}
 		if(!strcmp(token, "obj")) {
 			//Handle this somehow
