@@ -186,37 +186,37 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 		if(!strcmp(token, "obj")) {
 			//Handle this somehow
 
-			string line;
-			ifstream myfile ("objs/bunny.obj");
+			// string line;
+			// ifstream myfile ("objs/bunny.obj");
 
-			std::vector<std::string> x;
-			std::vector<Vector3f> vertexList;
+			// std::vector<std::string> x;
+			// std::vector<Vector3f> vertexList;
 
-			printf("Starting obj file parsing\n");
-			std::vector<Triangle> objFile;
-			if (myfile.is_open()){
-				while ( getline (myfile,line) ){
-					if(line[0] == 'v'){
-						x = split(line, ' ');
-						Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
-						vertexList.push_back(ver);
-						printf("%f\t%f\t%f\n", ver[0] ,ver[1] ,ver[2]);
-					}
-					if(line[0] == 'f'){
-						x = split(line, ' ');
-						Triangle tri = Triangle(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1], current_BRDF);
-						objFile.push_back(tri);
-					}
-				}
-				myfile.close();
-			}
+			// printf("Starting obj file parsing\n");
+			// std::vector<Triangle> objFile;
+			// if (myfile.is_open()){
+			// 	while ( getline (myfile,line) ){
+			// 		if(line[0] == 'v'){
+			// 			x = split(line, ' ');
+			// 			Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
+			// 			vertexList.push_back(ver);
+			// 			printf("%f\t%f\t%f\n", ver[0] ,ver[1] ,ver[2]);
+			// 		}
+			// 		if(line[0] == 'f'){
+			// 			x = split(line, ' ');
+			// 			Triangle tri = Triangle(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1], current_BRDF);
+			// 			objFile.push_back(tri);
+			// 		}
+			// 	}
+			// 	myfile.close();
+			// }
 
-			for(std::vector<Triangle>::iterator it = objFile.begin(); it != objFile.end(); ++it) {
-	    		objects->push_back(&(*it));
-			}
-			BRDF *temp_BRDF = current_BRDF;
-			current_BRDF = new BRDF();
-			*current_BRDF = *temp_BRDF;
+			// for(std::vector<Triangle>::iterator it = objFile.begin(); it != objFile.end(); ++it) {
+	  //   		objects->push_back(&(*it));
+			// }
+			// BRDF *temp_BRDF = current_BRDF;
+			// current_BRDF = new BRDF();
+			// *current_BRDF = *temp_BRDF;
 		}
 
 		if(!strcmp(token, "ltp")) {
