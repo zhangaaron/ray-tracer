@@ -33,5 +33,7 @@ void Sampler::next(int* XYCoords){
 	XYCoords[1] = y;
 	x = (x + 1) % x_max;
 	if (x == 0)	y++;
-	
+	if (x == 0) {
+		printf("Y is at %d\n", y);
+	}
 };

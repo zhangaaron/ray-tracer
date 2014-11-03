@@ -112,7 +112,7 @@ void setColor(Vector3f* color, float r, float g, float b){
 
 
 void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
-	if (depth > 10){
+	if (depth > 6){
 		setColor(color, 0, 0, 0);
 		return ;
 	}
@@ -120,7 +120,6 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 		setColor(color, 0, 0, 0);
 		return ;
 	}
-
 	float holder = 0;
 	Vector3f dummy(0,0,0);
 

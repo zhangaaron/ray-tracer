@@ -94,7 +94,7 @@ Light *parse_point_light(float *param) {
 	Vector3f RGB = Vector3f(param[3], param[4], param[5]);
 	float fall_off = param[6];
 	return new PointLight(xyz, RGB, fall_off);
-	
+
 }
 Light *parse_directional_light(float *param) {
 
@@ -152,6 +152,14 @@ void parseBRDF(float *param, BRDF *curr_b) {
 	curr_b->k_sp = specularity_coefficent;
 }
 
+Triangle *parseObjTriangle(int v1, int v2, int v3, std::vector<Vector3f>* vertexList, BRDF *current_mat) {
+	Vector3f vert_1 = (*vertexList)[v1];
+	Vector3f vert_2 = (*vertexList)[v2];
+	Vector3f vert_3 = (*vertexList)[v3];
+	return new Triangle(vert_1, vert_2, vert_3, current_mat);
+}
+
+
 /*
 INPUT: A string file name and a ptr to Scene object. 
 
@@ -163,7 +171,7 @@ input. Unfortunately there is no easy way to make this a switch since string equ
 */
 void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 	FILE *fp = fopen(file_name, "r"); //File pointer to the file we want to read. 
-	if (!fp) {//file could not be read, exit. 
+	if (!fp) {//file could not be read, exit.
 		printf("%s could not be read, exiting. ", file_name);
 		exit(0);
 	}
@@ -177,8 +185,8 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 		char *token = "A";
 		int integer_tokens[15];
 		float float_tokens[15];
+		std::string objFileName = ((std::string)line).substr(4, ((std::string)line).find('.obj') + 9);
 		token = tokenize_line(line, integer_tokens, float_tokens);
-
 		if (!strcmp(token, "xfz") || !strcmp(token, "xfz\n")) { //Flush the transformation by setting to default. 
 			current_transform = Transformation();
 		}
@@ -203,38 +211,30 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 		}
 		if(!strcmp(token, "obj")) {
 			//Handle this somehow
-
-			// string line;
-			// ifstream myfile ("objs/bunny.obj");
-
-			// std::vector<std::string> x;
-			// std::vector<Vector3f> vertexList;
-
-			// printf("Starting obj file parsing\n");
-			// std::vector<Triangle> objFile;
-			// if (myfile.is_open()){
-			// 	while ( getline (myfile,line) ){
-			// 		if(line[0] == 'v'){
-			// 			x = split(line, ' ');
-			// 			Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
-			// 			vertexList.push_back(ver);
-			// 			printf("%f\t%f\t%f\n", ver[0] ,ver[1] ,ver[2]);
-			// 		}
-			// 		if(line[0] == 'f'){
-			// 			x = split(line, ' ');
-			// 			Triangle tri = Triangle(vertexList[atoi(x[1].c_str()) - 1], vertexList[atoi(x[2].c_str()) - 1], vertexList[atoi(x[3].c_str()) - 1], current_BRDF);
-			// 			objFile.push_back(tri);
-			// 		}
-			// 	}
-			// 	myfile.close();
-			// }
-
-			// for(std::vector<Triangle>::iterator it = objFile.begin(); it != objFile.end(); ++it) {
-	  //   		objects->push_back(&(*it));
-			// }
-			// BRDF *temp_BRDF = current_BRDF;
-			// current_BRDF = new BRDF();
-			// *current_BRDF = *temp_BRDF;
+			string thisline;
+			std::vector<std::string> x;
+			ifstream myfile(objFileName);
+			std::vector<Vector3f> vertexList;
+			std::vector<Triangle> objFile;
+			if (myfile.is_open()){
+				while ( getline (myfile,thisline) ){
+					if(thisline[0] == 'v'){
+						x = split(thisline, ' ');
+						Vector3f ver(std::stof(x[1]), std::stof(x[2]), std::stof(x[3]));
+						vertexList.push_back(ver);
+					}
+					if(thisline[0] == 'f'){
+						x = split(thisline, ' ');
+						Triangle* new_triangle = parseObjTriangle(atoi(x[1].c_str()) - 1, atoi(x[2].c_str()) - 1, atoi(x[3].c_str()) - 1, &vertexList, current_BRDF);
+						new_triangle->transformation = current_transform;
+						objects->push_back(new_triangle);
+					}
+				}
+				myfile.close();
+			}
+			BRDF *temp_BRDF = current_BRDF;
+			current_BRDF = new BRDF();
+			*current_BRDF = *temp_BRDF;
 		}
 
 		if(!strcmp(token, "ltp")) {
