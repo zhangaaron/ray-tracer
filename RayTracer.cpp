@@ -112,7 +112,7 @@ void setColor(Vector3f* color, float r, float g, float b){
 
 
 void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
-	if (depth > 6){
+	if (depth > 10){
 		setColor(color, 0, 0, 0);
 		return ;
 	}
@@ -217,7 +217,7 @@ class Scene {
 };
 
 Scene::Scene(Vector3f cam_coord, Vector3f ll, Vector3f lr, Vector3f ul, Vector3f ur, int output_x, int output_y, AggregatePrimitive* objlist, std::vector<Light*>* lightList, Vector3f ambient, char *fileName):
-	mySampler(output_x, output_y), 
+	mySampler(output_x, output_y),
 	myFilm(output_x, output_y, fileName),
   	myCamera(cam_coord, ll, lr, ul, ur, output_x, output_y),
 	myTracer(objlist, lightList, ambient)
