@@ -138,9 +138,9 @@ void RayTracer::trace(Ray& ray, int depth, Vector3f* color){
 	Vector3f local_pos(in.localGeo->pos[0], in.localGeo->pos[1], in.localGeo->pos[2]);
 	BRDF* constants = (hitObject)->get_material();
 	Vector3f rgb(0,0,0);
-	rgb[0] += ambient[0] * constants->k_a[0];
-	rgb[1] += ambient[1] * constants->k_a[1];
-	rgb[2] += ambient[2] * constants->k_a[2];
+	rgb[0] +=  constants->k_a[0];
+	rgb[1] +=  constants->k_a[1];
+	rgb[2] +=  constants->k_a[2];
 	for(std::vector<Light*>::iterator it = lightList->begin(); it != lightList->end(); ++it) {
 
 		Light* currentLight = (*it);

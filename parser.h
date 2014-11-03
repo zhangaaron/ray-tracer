@@ -160,6 +160,10 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 		int integer_tokens[15];
 		float float_tokens[15];
 		token = tokenize_line(line, integer_tokens, float_tokens);
+
+		if (!strcmp(token, "xfz") || !strcmp(token, "xfz\n")) { //Flush the transformation by setting to default. 
+			current_transform = Transformation();
+		}
 		if (!strcmp(token, "cam")) {
 			parser_fill->camera = parse_camera(integer_tokens);
 		}
@@ -202,9 +206,7 @@ void parse_loop(char *file_name, struct parser_struct *parser_fill) {
 		if (!strcmp(token, "xfs")) {
 			parseTransformation(integer_tokens, &current_transform, SCALE);
 		}
-		if (!strcmp(token, "xfz")) { //Flush the transformation by setting to default. 
-			current_transform = Transformation();
-		}
+	
 
 
 	}

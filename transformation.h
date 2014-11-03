@@ -41,6 +41,11 @@ class Transformation {
 			cout << "Rotation matrix: \n" << matrix_transformation_point.rotation() << "\n";
 			cout << "Translation: \n " << matrix_transformation_point.translation() << "\n"; 
 		}
+
+		void flush() {
+			matrix_transformation_point = AngleAxisf(0, Vector3f::UnitX());
+			matrix_transformation_ray = AngleAxisf(0, Vector3f::UnitX()); 
+		}
 		
 
 	private: 
