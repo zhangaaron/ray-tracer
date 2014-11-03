@@ -169,9 +169,9 @@ bool Triangle::intersectP(Ray& ray){
 	}
 	float t = -1*((transformed_pos - v1).dot(N) / n_dot_ray);
 	Vector3f point = t*transformed_dir + transformed_pos;
-	if(t < 0.00000000000001){
-		return false;
-	}
+	// if(t < 0.00000000000001){
+	// 	return false;
+	// }
 	if (N.dot(A.cross(point - v1)) < 0){
 		return false;
 	}
