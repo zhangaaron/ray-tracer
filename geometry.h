@@ -125,7 +125,7 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 	float t = -1*((transformed_pos - v1).dot(N) / n_dot_ray);
 	//float t = -(N.dot(ray.pos) + d) / n_dot_ray;
 	//printf("\nt:\t%f\n", n_dot_ray);
-	Vector3f point = t*ray.dir + ray.pos;
+	Vector3f point = t*transformed_dir + transformed_pos;
 
 	if (N.dot(A.cross(point - v1)) < 0){
 		//printf("case 2 fail");
