@@ -221,8 +221,8 @@ BRDF* Sphere::get_material(){
 bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 
 	//We want to translate the ray from world space into the object space, so apply inverse transformation. 
-	Vector3f e = transformation.matrix_transformation_point.inverse() * ray.pos; //Don't scale the position of the ray!
-	Vector3f d = transformation.matrix_transformation_ray.inverse() * ray.dir; //Gotta figure out inconsistent documentation here!
+	Vector3f e = transformation.matrix_transformation_point.inverse() * ray.pos; 
+	Vector3f d = transformation.matrix_transformation_ray.inverse() * ray.dir; //ray and point are treated differently in transformation
 
 	Vector3f c = pos;
 
@@ -232,9 +232,9 @@ bool Sphere::intersect(Ray& ray, float* thit, LocalGeo* local){
 	}
 	else{
 		*thit = (-1 * (d.dot(e-c)) - sqrt(determinant)) / (d.dot(d)); //For what t value we get a hit. Always take negative value of det since its closer to viewer. 
-		local->pos =   ray.pos + *thit* ray.dir ;
-		local->normal = (transformation.matrix_transformation_point.linear().inverse().transpose()
-							* (local->pos - c)).normalized(); //This is a normalized vector transformed back into the world space!
+		local->pos =   transformation.matrix_transformation_point* (e + d * *thit);
+		local->normal = (transformation.matrix_transformation_ray.linear().inverse().transpose()
+							* (e + d * *thit - c)); //This is a normalized vector transformed back into the world space!
 
 
 
