@@ -143,7 +143,7 @@ bool Triangle::intersect(Ray& ray, float* thit, LocalGeo* local){
 	}
 
 	*thit = t;
-	local->pos = point;
+	local->pos = t * ray.dir + ray.pos;
 	local->normal = (transformation.matrix_transformation_point.linear().inverse().transpose()
 							* N).normalized(); //This is a normalized normal vector transformed back into the world space!
 	//printf("Ray direction:  \t%f\t%f\t%f\n\n", N[0], N[1], N[2]);
